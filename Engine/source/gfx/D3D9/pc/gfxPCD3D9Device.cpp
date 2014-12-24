@@ -30,6 +30,7 @@
 #include "gfx/D3D9/screenshotD3D9.h"
 #include "gfx/D3D9/videoCaptureD3D9.h"
 #include "core/util/journal/process.h"
+#include "environment/silverLining/SilverLiningSky.h"
 
 
 bool GFXPCD3D9Device::mEnableNVPerfHUD = false;
@@ -1078,6 +1079,12 @@ void GFXPCD3D9Device::reset( D3DPRESENT_PARAMETERS &d3dpp )
 
    mInitialized = false;
 
+   if(SilverLiningSky::atm != NULL)
+	   SilverLiningSky::atm->D3D9DeviceLost();
+
+   if(SilverLiningSky::atm != NULL)
+	   SilverLiningSky::atm->D3D9DeviceReset();
+
    mMultisampleType = d3dpp.MultiSampleType;
    mMultisampleLevel = d3dpp.MultiSampleQuality;
    _validateMultisampleParams(d3dpp.BackBufferFormat, mMultisampleType, mMultisampleLevel);
@@ -1116,6 +1123,10 @@ void GFXPCD3D9Device::reset( D3DPRESENT_PARAMETERS &d3dpp )
    }
 
    D3D9Assert( hres, "GFXD3D9Device::reset - Failed to create D3D Device!" );
+
+   if(SilverLiningSky::atm != NULL)
+	   SilverLiningSky::atm->D3D9DeviceReset();
+
    mInitialized = true;
 
    // Setup default states

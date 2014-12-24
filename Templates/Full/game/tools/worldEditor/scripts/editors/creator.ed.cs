@@ -40,6 +40,7 @@ function EWCreatorWindow::init( %this )
       %this.registerMissionObject( "CloudLayer",          "Cloud Layer" );
       %this.registerMissionObject( "BasicClouds",         "Basic Clouds" );
       %this.registerMissionObject( "ScatterSky",          "Scatter Sky" );
+      %this.registerMissionObject( "SilverLiningSky",     "SilverLining Sky" );
       %this.registerMissionObject( "Sun",                 "Basic Sun" );
       %this.registerMissionObject( "Lightning" );
       %this.registerMissionObject( "WaterBlock",          "Water Block" );
