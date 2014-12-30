@@ -85,10 +85,16 @@ public:
 
    static SilverLining::Atmosphere* atm;
 
+   //Matrices
+   MatrixSet *mMatrixSet;
+   double mMatModelView[16], mMatProjection[16];
+
    // SimObject
    bool onAdd();
 
    void InitializeAtm();
+
+   void matrixToDoubleArray(const MatrixF& matrix, double out[]);
 
    void onRemove();
 
@@ -117,8 +123,6 @@ protected:
 
    void _renderSky( ObjectRenderInst *ri, SceneRenderState *state, BaseMatInstance *overrideMat );
 
-   void SetModelviewProjectionMatrix(SceneRenderState *state);
-
    void _renderObjects( ObjectRenderInst *ri, SceneRenderState *state, BaseMatInstance *overrideMat );
    void _debugRender( ObjectRenderInst *ri, SceneRenderState *state, BaseMatInstance *overrideMat );
 
@@ -138,7 +142,7 @@ protected:
    void ConformCloudsLayers();
    void setupClouds( S32 cloudType );
    void ConformPrecipitations();
-
+   void _onTextureEvent( GFXTexCallbackCode code );
 protected:
 
 #define CURVE_COUNT 5

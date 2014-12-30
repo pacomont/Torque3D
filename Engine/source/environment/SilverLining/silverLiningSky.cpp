@@ -64,7 +64,7 @@ const char* cloudTypesVector[NUM_CLOUD_TYPES] = { "CIRROCUMULUS",	"CIRRUS_FIBRAT
 IMPLEMENT_CO_NETOBJECT_V1(SilverLiningSky);
 
 
-SilverLiningSky::SilverLiningSky()
+SilverLiningSky::SilverLiningSky() : mMatrixSet(NULL)
 {		
 	mNetFlags.set( Ghostable | ScopeAlways );
 	mTypeMask |= EnvironmentObjectType | LightObjectType | StaticObjectType;
@@ -99,11 +99,16 @@ SilverLiningSky::SilverLiningSky()
 
 	setTime( "2014 12 22 15 30 00" );
 
+	mMatrixSet = reinterpret_cast<MatrixSet *>(dMalloc_aligned(sizeof(MatrixSet), 16));
+	constructInPlace(mMatrixSet);
+
+
 }
 
 SilverLiningSky::~SilverLiningSky()
 {	
 	SAFE_DELETE( mLight );
+	dFree_aligned(mMatrixSet);
 }
 
 bool SilverLiningSky::onAdd()
@@ -136,6 +141,8 @@ bool SilverLiningSky::onAdd()
 
 	if ( isClientObject() )
 	{
+		GFXTextureManager::addEventDelegate( this, &SilverLiningSky::_onTextureEvent ); 
+
 		// Instantiate an Atmosphere object.
 		atm = new SilverLining::Atmosphere("Your Company Name", "Your License Code");    
 		InitializeAtm();
@@ -147,7 +154,7 @@ bool SilverLiningSky::onAdd()
 void SilverLiningSky::InitializeAtm()
 {
 	// Tell SilverLining what your axis conventions are.
-	VectorF up(0, 1, 0), right(1, 0, 0);
+	VectorF up(0, 0, 1), right(0, 1, 0);
 	atm->SetUpVector(up.x, up.y, up.z);
 	atm->SetRightVector(right.x, right.y, right.z);
 	atm->DisableFarCulling(true);
@@ -202,6 +209,16 @@ void SilverLiningSky::onRemove()
 
 	Parent::onRemove();
 }
+
+void SilverLiningSky::_onTextureEvent( GFXTexCallbackCode code ) 
+{ 
+	if(atm) { 
+		if(code == GFXZombify) 
+			atm->D3D9DeviceLost(); 
+		else if(code == GFXResurrect) 
+			atm->D3D9DeviceReset(); 
+	} 
+} 
 
 void SilverLiningSky::_conformLights()
 {
@@ -401,12 +418,8 @@ void SilverLiningSky::prepRenderImage( SceneRenderState *state )
 		!state->isReflectPass() )
 		return;
 
-	LPDIRECT3DDEVICE9 D3DDevice = dynamic_cast<GFXD3D9Device *>(GFX)->getDevice();
-	if(D3DDevice->GetNumberOfSwapChains()<=0)
-	{
-		Con:printf("AAAAH!");
-		return;
-	}
+	mMatrixSet->setSceneView(GFX->getWorldMatrix());
+	mMatrixSet->setSceneProjection(GFX->getProjectionMatrix());
 
 	// Regular sky render instance.
 	ObjectRenderInst *riSky = state->getRenderPass()->allocInst<ObjectRenderInst>();
@@ -430,17 +443,7 @@ void SilverLiningSky::prepRenderImage( SceneRenderState *state )
 
 	ConformCloudsLayers();
 
-	if(atm)
-	{
-		if(state->isDiffusePass())	  
-			SetModelviewProjectionMatrix(state);	// calculare matrixes only on first time
-		else{	
-			atm->SetCameraMatrix(pView);
-			atm->SetProjectionMatrix(pProj);
-		}
-
-		_conformLights();
-	}
+	_conformLights();
 }
 
 
@@ -453,7 +456,23 @@ void SilverLiningSky::_renderSky( ObjectRenderInst *ri, SceneRenderState *state,
 	if ( overrideMat )
 		return;
 
+	mMatrixSet->restoreSceneViewProjection();
+	mMatrixSet->setWorld(getRenderTransform());
+
+	// GFXTransformSaver is a handy helper class that restores
+	// the current GFX matrices to their original values when
+	// it goes out of scope at the end of the function
 	GFXTransformSaver saver;
+
+	//Set Triton Matrices
+	MatrixF view = mMatrixSet->getWorldToCamera();
+	MatrixF proj = GFX->getProjectionMatrix();
+	view = view.transpose();
+	proj = proj.transpose();
+	matrixToDoubleArray(view, mMatModelView);
+	matrixToDoubleArray(proj, mMatProjection);
+	atm->SetCameraMatrix(mMatModelView);
+	atm->SetProjectionMatrix(mMatProjection);
 
 	GFX->setStateBlock( mZEnableSB );
 
@@ -464,6 +483,12 @@ void SilverLiningSky::_renderSky( ObjectRenderInst *ri, SceneRenderState *state,
 	//_conformLights();
 }
 
+void SilverLiningSky::matrixToDoubleArray(const MatrixF& matrix, double out[])
+{
+	for(int i = 0; i < 16; i++) {
+		out[i] = matrix[i];
+	}
+}
 
 void SilverLiningSky::_renderObjects( ObjectRenderInst *ri, SceneRenderState *state, BaseMatInstance *overrideMat )
 {
@@ -473,15 +498,35 @@ void SilverLiningSky::_renderObjects( ObjectRenderInst *ri, SceneRenderState *st
 	if ( overrideMat )
 		return;
 
+	mMatrixSet->restoreSceneViewProjection();
+	mMatrixSet->setWorld(getRenderTransform());
+
+	// GFXTransformSaver is a handy helper class that restores
+	// the current GFX matrices to their original values when
+	// it goes out of scope at the end of the function
 	GFXTransformSaver saver;
+
+	//Set Triton Matrices
+	MatrixF view = mMatrixSet->getWorldToCamera();
+	//MatrixF proj = GFX->getProjectionMatrix();
+	Frustum frust = state->getCameraFrustum();
+	frust.setFarDist( 20000.0f );	
+	MatrixF proj( true );
+	frust.getProjectionMatrix( &proj );
+
+	view = view.transpose();
+	proj = proj.transpose();
+	matrixToDoubleArray(view, mMatModelView);
+	matrixToDoubleArray(proj, mMatProjection);
+	atm->SetCameraMatrix(mMatModelView);
+	atm->SetProjectionMatrix(mMatProjection);
 
 	GFX->setStateBlock( mZEnableSB ); 	
 
 	// Call DrawObjects to draw all the clouds from back to front.
 
 	//atm->CullObjects();
-	atm->DrawObjects(true, true, true, 0.0);
-
+	atm->DrawObjects(true, true, true, 0.0);	
 }
 
 
@@ -731,60 +776,6 @@ void SilverLiningSky::ConformPrecipitations()
 
 	atm->GetConditions()->SetPrecipitation( SilverLining::CloudLayer::NONE, 0.0f); //To clear all precipitation...
 	atm->GetConditions()->SetPrecipitation( mPrecipitationType, mPrecipitationRate);	
-}
-
-void SilverLiningSky:: SetModelviewProjectionMatrix(SceneRenderState *state)
-{
-	MatrixF camTran = state->getCameraTransform();	
-	EulerF angles = camTran.toEuler();
-	Point3F camPos = state->getCameraPosition() * 11.0f; // sorry, magic number
-
-	yawCam = angles.z;
-	//
-	// Position and aim the camera.
-	//
-
-	D3DXMATRIX Rot;
-	D3DXMatrixRotationYawPitchRoll(&Rot, angles.z, angles.x, -angles.y);
-	D3DXMATRIX Pos;
-	D3DXMatrixTranslation(&Pos, -camPos.x, -camPos.z, camPos.y);
-	D3DXMATRIX view;
-	D3DXMatrixMultiply(&view, &Pos, &Rot);
-
-	//
-	// Set projection matrix.
-	//
-
-	RectI vp = state->getViewport();
-	Frustum frustum = state->getCameraFrustum();
-
-	D3DXMATRIX proj;
-	D3DXMatrixPerspectiveFovRH(
-		&proj,
-		frustum.getFov(),
-		(float)vp.len_x() / (float)vp.len_y(),
-		1.0f,
-		100000.0f);
-
-
-	// Set view and proj matrices with SilverLining
-	if (atm)
-	{
-
-		int i = 0;
-		for (int row = 0; row < 4; row++)
-		{
-			for (int col = 0; col < 4; col++)
-			{
-				pView[i] = view(row, col);
-				pProj[i] = proj(row, col);
-				i++;
-			}
-		}
-
-		atm->SetCameraMatrix(pView);
-		atm->SetProjectionMatrix(pProj);
-	}
 }
 
 Point3F SilverLiningSky::getSunDir()
