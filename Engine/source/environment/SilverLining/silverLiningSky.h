@@ -54,15 +54,20 @@
 #include "CloudLayer.h"
 #endif
 
+typedef SilverLining::CloudLayer::PrecipitationTypes SilveLiningPrecipitationTypes;
+DefineEnumType( SilveLiningPrecipitationTypes );
+
+DefineConsoleType( TypeSilveLiningPrecipitationTypes, SilveLiningPrecipitationTypes );
 
 class LightInfo;
+
 
 class MyMillisecondTimer : public SilverLining::MillisecondTimer
 {
 public:
 	virtual unsigned long SILVERLINING_API GetMilliseconds() const
 	{
-		return SilverLining::MillisecondTimer::GetMilliseconds() * 2;
+		return SilverLining::MillisecondTimer::GetMilliseconds() / 4;
 	}
 };
 
@@ -86,7 +91,6 @@ public:
    static SilverLining::Atmosphere* atm;
 
    //Matrices
-   MatrixSet *mMatrixSet;
    double mMatModelView[16], mMatProjection[16];
 
    // SimObject
@@ -117,13 +121,11 @@ public:
 
    Point3F getSunDir();
 
-	void SetPrecipitation(S32 precipitationType, F32 ratemmPerHour);
+	void SetPrecipitation(S32 precipitationType, F32 ratemmPerHour);	
 
 protected:
 
    void _renderSky( ObjectRenderInst *ri, SceneRenderState *state, BaseMatInstance *overrideMat );
-
-   void _renderObjects( ObjectRenderInst *ri, SceneRenderState *state, BaseMatInstance *overrideMat );
    void _debugRender( ObjectRenderInst *ri, SceneRenderState *state, BaseMatInstance *overrideMat );
 
    void _conformLights();
@@ -133,6 +135,8 @@ protected:
    static bool ptSetClouds( void *object, const char *index, const char *data );
    static bool ptSetTime( void *object, const char *index, const char *data );
    static bool ptReadOnlySetFn( void *object, const char *index, const char *data );
+   static bool ptSetPrecipitationType( void *object, const char *index, const char *data );
+   static bool ptSetPrecipitationRate( void *object, const char *index, const char *data );
 
    // SimObject.
    virtual void _onSelected();
@@ -143,6 +147,7 @@ protected:
    void setupClouds( S32 cloudType );
    void ConformPrecipitations();
    void _onTextureEvent( GFXTexCallbackCode code );
+   void setWindSetting( F32 windSpeed, F32 windDirection );
 protected:
 
 #define CURVE_COUNT 5
@@ -157,24 +162,25 @@ protected:
 
    F32 yawCam; // for average color  fog calc.
 
-   S32 mPrecipitationType;
-   F32 mPrecipitationRate;
-
    MyMillisecondTimer timer;
 
    ColorF mAmbientColor;   ///< Not a field
    ColorF mSunColor;       ///< Not a field
-   ColorF mFogColor;       ///< Not a field
 
    LightInfo *mLight;
 
    bool mCastShadows;
+   F32 mBrightness;
    bool mDirty;
-
-   GFXStateBlockRef mZEnableSB;
 
    // Fields...
    StringTableEntry mDateTime;
+
+   F32 mCrepuscularRays;
+
+   F32 mWindSpeed;
+   F32 mWindDirection;
+   S32 mWindHandle;
 
    StringTableEntry mCloudLayerTypeName[NUM_CLOUD_TYPES];   
    S32 mCloudLayerHandle[NUM_CLOUD_TYPES];
@@ -185,6 +191,12 @@ protected:
    F32 mCloudLayerDensity[NUM_CLOUD_TYPES];   
    bool mCloudLayerMustConform[NUM_CLOUD_TYPES]; 
    bool mCloudLayerUpdate[NUM_CLOUD_TYPES]; 
+
+   S32 mPrecipitationType;
+   F32 mPrecipitationRate;
+   SilveLiningPrecipitationTypes mSelectPrecipitationActive;  
+
+
 };
 
 #endif // _SILVERLININGSKY_H_

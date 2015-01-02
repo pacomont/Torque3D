@@ -49,6 +49,17 @@
 #include <algorithm>    // std::sort
 #include "gfx/util/gfxFrustumSaver.h"
 
+ImplementEnumType( SilveLiningPrecipitationTypes,
+	"PrecipitationTypes.\n" )
+
+{ SilveLiningPrecipitationTypes::NONE, "NONE", "NONE" },
+{ SilveLiningPrecipitationTypes::RAIN, "RAIN", "RAIN" },
+{ SilveLiningPrecipitationTypes::DRY_SNOW, "DRY_SNOW", "DRY_SNOW", },
+{ SilveLiningPrecipitationTypes::WET_SNOW, "WET_SNOW", "WET_SNOW" },
+{ SilveLiningPrecipitationTypes::SLEET, "SLEET", "SLEET" },
+
+EndImplementEnumType;
+
 ConsoleDocClass( SilverLiningSky,
 	"@brief Automatic skies, 3D clouds, and weather for any time and location."
 
@@ -64,13 +75,12 @@ const char* cloudTypesVector[NUM_CLOUD_TYPES] = { "CIRROCUMULUS",	"CIRRUS_FIBRAT
 IMPLEMENT_CO_NETOBJECT_V1(SilverLiningSky);
 
 
-SilverLiningSky::SilverLiningSky() : mMatrixSet(NULL)
+SilverLiningSky::SilverLiningSky()
 {		
 	mNetFlags.set( Ghostable | ScopeAlways );
 	mTypeMask |= EnvironmentObjectType | LightObjectType | StaticObjectType;
 
 	mSunColor.set( 0, 0, 0, 1.0f );
-	mFogColor.set( 0, 0, 0, 1.0f );
 
 	yawCam = 0.0f;
 
@@ -90,7 +100,8 @@ SilverLiningSky::SilverLiningSky() : mMatrixSet(NULL)
 		mCloudLayerMustConform[i] = false; 
 		mCloudLayerUpdate[i] = true; 
 	}
-
+	
+	mSelectPrecipitationActive = SilveLiningPrecipitationTypes::NONE;
 	mPrecipitationType = SilverLining::CloudLayer::NONE;
 	mPrecipitationRate = 0;
 
@@ -99,16 +110,18 @@ SilverLiningSky::SilverLiningSky() : mMatrixSet(NULL)
 
 	setTime( "2014 12 22 15 30 00" );
 
-	mMatrixSet = reinterpret_cast<MatrixSet *>(dMalloc_aligned(sizeof(MatrixSet), 16));
-	constructInPlace(mMatrixSet);
+	mCastShadows = true;
+	mBrightness = 1.0f;
 
-
+	mCrepuscularRays = 0.0f;
+	mWindSpeed = 0.0f;
+	mWindDirection = 0.0f;
+	mWindHandle = 0;
 }
 
 SilverLiningSky::~SilverLiningSky()
 {	
 	SAFE_DELETE( mLight );
-	dFree_aligned(mMatrixSet);
 }
 
 bool SilverLiningSky::onAdd()
@@ -126,19 +139,6 @@ bool SilverLiningSky::onAdd()
 
 	addToScene();
 
-	// Your rendering state must be set for rendering translucent objects. Specifically, you must enable
-	// blending with a blend equation of ONE, INVSRCALPHA. Lighting must be off, depth reads enabled,
-	// depth writes disabled, fog must be off, and 2D texturing enabled.
-
-	GFXStateBlockDesc desc;
-	desc.fillMode = GFXFillSolid;  
-	desc.setBlend(true, GFXBlendOne, GFXBlendInvSrcAlpha);
-	desc.setZReadWrite( true, false );
-	desc.setCullMode( GFXCullNone );   
-
-	mZEnableSB = GFX->createStateBlock(desc);
-
-
 	if ( isClientObject() )
 	{
 		GFXTextureManager::addEventDelegate( this, &SilverLiningSky::_onTextureEvent ); 
@@ -154,7 +154,7 @@ bool SilverLiningSky::onAdd()
 void SilverLiningSky::InitializeAtm()
 {
 	// Tell SilverLining what your axis conventions are.
-	VectorF up(0, 0, 1), right(0, 1, 0);
+	const VectorF up(0, 0, 1), right(0, 1, 0);
 	atm->SetUpVector(up.x, up.y, up.z);
 	atm->SetRightVector(right.x, right.y, right.z);
 	atm->DisableFarCulling(true);
@@ -166,13 +166,24 @@ void SilverLiningSky::InitializeAtm()
 
 	if (err == SilverLining::Atmosphere::E_NOERROR)
 	{
+		atm->SetConfigOption("rain-use-depth-buffer", "yes"); 
+		atm->SetConfigOption("snow-use-depth-buffer", "yes"); 
+		atm->SetConfigOption("sleet-use-depth-buffer", "yes"); 
+		atm->SetConfigOption("rain-minimum-pixels", "0"); 
+		atm->SetConfigOption("sleet-minimum-pixels", "0"); 
+		atm->SetConfigOption("snow-minimum-pixels", "0"); 
+
+		atm->SetConfigOption("snow-near-clip", "0.1"); 
+		atm->SetConfigOption("rain-near-clip", "0.1"); 
+		atm->SetConfigOption("sleet-near-clip", "0.1"); 
+
+		//atm->SetConfigOption("enable-precipitation-visibility-effects", "no"); 
+
 		// Add some atmospheric perspective
 		atm->GetConditions()->SetVisibility(kVisibility);
 
 		// Add a little wind
-		SilverLining::WindVolume wv;
-		wv.SetWindSpeed(0);
-		atm->GetConditions()->SetWind(wv);
+		setWindSetting(15.0f, 180.0f);
 
 		// Set our location (change this to your own latitude and longitude)
 		SilverLining::Location loc;
@@ -225,18 +236,9 @@ void SilverLiningSky::_conformLights()
 	if(!atm)
 		return;
 
-	VectorF lightDirection;
-	atm->GetSunOrMoonPosition(&lightDirection.x, &lightDirection.z, &lightDirection.y);   
-	lightDirection.y = -lightDirection.y;// componente y esta invertido   
-	mSunDir = lightDirection;
+	atm->GetSunOrMoonPosition(&mSunDir.x, &mSunDir.y, &mSunDir.z);   
+	mLightDir = -mSunDir;
 
-	mLightDir = -lightDirection;
-
-
-	// Have to do interpolation
-	// after the light direction is set
-	// otherwise the sun color will be invalid.
-	mFogColor.set( 0, 0, 0, 0 );
 	mAmbientColor.set( 0, 0, 0, 0 );
 	mSunColor.set( 0, 0, 0, 0 );
 
@@ -251,13 +253,12 @@ void SilverLiningSky::_conformLights()
 	mLight->setType(LightInfo::Vector);
 	mLight->setCastShadows( mCastShadows );
 
-	//mLightDir.z = -mLightDir.z;
 	mLight->setDirection( mLightDir );
 	mLight->setAmbient( mAmbientColor );   
 	mLight->setColor( mSunColor );
-	mLight->setBrightness( 1.0f );     
+	mLight->setBrightness( mBrightness );     
 
-	mLight->setRange(kVisibility*kVisibility);
+	mLight->setRange(kVisibility*kVisibility);	
 
 	//atm->GetShadowMapObject()	
 
@@ -285,10 +286,18 @@ void SilverLiningSky::inspectPostApply()
 
 void SilverLiningSky::initPersistFields()
 {
-	addGroup("Date and Time");
+	addGroup("Settings");	
 	addProtectedField( "DateTime", TypeString, Offset( mDateTime, SilverLiningSky ), &SilverLiningSky::ptSetTime, &defaultProtectedGetFn,
 		"The horizontal angle of the sun measured clockwise from the positive Y world axis. This field is networked." );
-	endGroup("Date and Time");
+	addField( "crepuscularRays", TypeF32, Offset( mCrepuscularRays, SilverLiningSky ),
+		"Set to a value greater than 0 to draw crepuscular rays (AKA ""God rays"") after the clouds." );
+
+	addField( "WindSpeed", TypeF32, Offset( mWindSpeed, SilverLiningSky ),
+		"Set the wind velocity within this WindVolume, in meters per second." );
+	addField( "WindDirection", TypeF32, Offset( mWindDirection, SilverLiningSky ),
+		"Sets the wind direction, in degrees East from North. This is the direction the wind is"
+		"coming from, not the direction it is blowing toward." );
+	endGroup("Settings");
 
 	addGroup("Cloud Layers");
 	addArray( "Clouds", NUM_CLOUD_TYPES );
@@ -309,6 +318,17 @@ void SilverLiningSky::initPersistFields()
 	endArray( "Clouds" );
 	endGroup("Cloud Layers");
 
+	addGroup("Precipitation");
+	addProtectedField("PrecipitationActive", TypeSilveLiningPrecipitationTypes, Offset(mSelectPrecipitationActive, SilverLiningSky), &SilverLiningSky::ptSetPrecipitationType, &defaultProtectedGetFn, 
+		"The type of precipitation to simulate under this cloud layer - NONE, RAIN, WET_SNOW,"
+		"DRY_SNOW, or SLEET.");
+	addProtectedField("PrecipitationRate", TypeF32, Offset(mPrecipitationRate, SilverLiningSky), &SilverLiningSky::ptSetPrecipitationRate, &defaultProtectedGetFn, 
+		"The simulated rate of precipitation, in millimeters per hour. Reasonable ranges"
+		"might be between 1 for light rain or 20 for heavier rain. This value will be clamped to the value"
+		"specified by rain-max-intensity, snow-max-intensity, or sleet-max-intensity in"
+		"resources/SilverLining.config, which is 30 by default.");///< SoftSelectAction brush filtering
+	endGroup("Precipitation");
+
 	// We only add the basic lighting options that all lighting
 	// systems would use... the specific lighting system options
 	// are injected at runtime by the lighting system itself.
@@ -317,10 +337,32 @@ void SilverLiningSky::initPersistFields()
 
 	addField( "castShadows", TypeBool, Offset( mCastShadows, SilverLiningSky ),
 		"Enables/disables shadows cast by objects due to SilverLiningSky light." );
+	addField( "brightness", TypeF32, Offset( mBrightness, SilverLiningSky ),
+		"The brightness of the ScatterSky's light object." );
 
 	endGroup( "Lighting" );
 
 	Parent::initPersistFields();
+}
+
+/// Set up wind blowing
+void SilverLiningSky::setWindSetting( F32 windSpeed, F32 windDirection )
+{
+	mWindSpeed = windSpeed;
+	mWindDirection = windDirection;
+
+	// Add a little wind
+	if(atm)
+	{		
+		if(mWindHandle != 0)
+			mWindHandle = atm->GetConditions()->RemoveWindVolume(mWindHandle);
+		SilverLining::WindVolume wv;
+		wv.SetDirection(mWindDirection);
+		wv.SetMinAltitude(0);
+		wv.SetMaxAltitude(10000);
+		wv.SetWindSpeed(mWindSpeed);
+		mWindHandle = atm->GetConditions()->SetWind(wv);
+	}
 }
 
 U32 SilverLiningSky::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
@@ -338,6 +380,14 @@ U32 SilverLiningSky::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
 
 	if ( stream->writeFlag( mask & UpdateMask ) )
 	{
+		stream->write( mBrightness );
+		stream->writeFlag( mCastShadows );
+
+		stream->write( mCrepuscularRays );
+
+		stream->write( mWindSpeed );
+		stream->write( mWindDirection );
+
 		for (S32 i = 0; i < NUM_CLOUD_TYPES; i++)
 		{
 			if ( stream->writeFlag( mCloudLayerUpdate[i] ) )
@@ -381,6 +431,17 @@ void SilverLiningSky::unpackUpdate(NetConnection *con, BitStream *stream)
 
 	if ( stream->readFlag() ) // UpdateMask
 	{
+		stream->read( &mBrightness );
+		mCastShadows = stream->readFlag();
+
+		stream->read( &mCrepuscularRays );
+
+		F32 windSpeed, windDirection;
+		stream->read( &windSpeed );
+		stream->read( &windDirection );
+		if(windSpeed != mWindSpeed || windDirection != mWindDirection)
+			setWindSetting(windSpeed, windDirection);
+
 		for (S32 i = 0; i < NUM_CLOUD_TYPES; i++)
 		{
 			if ( stream->readFlag() ) // mCloudLayers[i].update
@@ -397,6 +458,7 @@ void SilverLiningSky::unpackUpdate(NetConnection *con, BitStream *stream)
 			}
 		}
 
+		_conformLights();
 		ConformCloudsLayers();
 	}
 
@@ -418,28 +480,28 @@ void SilverLiningSky::prepRenderImage( SceneRenderState *state )
 		!state->isReflectPass() )
 		return;
 
-	mMatrixSet->setSceneView(GFX->getWorldMatrix());
-	mMatrixSet->setSceneProjection(GFX->getProjectionMatrix());
+	//Set Triton Matrices
+	MatrixF view = GFX->getWorldMatrix();
+	
+	//MatrixF proj = GFX->getProjectionMatrix();
+	Frustum frust = GFX->getFrustum();
+	frust.setNearDist( 0.1f );	
+	frust.setFarDist( kVisibility );	
+	MatrixF proj( true );
+	frust.getProjectionMatrix( &proj );
 
-	// Regular sky render instance.
+	view = view.transpose();
+	proj = proj.transpose();
+	matrixToDoubleArray(view, mMatModelView);
+	matrixToDoubleArray(proj, mMatProjection);
+	atm->SetCameraMatrix(mMatModelView);
+	atm->SetProjectionMatrix(mMatProjection);
+
+	// sky render instance.
 	ObjectRenderInst *riSky = state->getRenderPass()->allocInst<ObjectRenderInst>();
 	riSky->renderDelegate.bind( this, &SilverLiningSky::_renderSky );
 	riSky->type = RenderPassManager::RIT_Object;
-	riSky->defaultKey = 10;
-	riSky->defaultKey2 = 0;
-	riSky->translucentSort = false;
 	state->getRenderPass()->addInst( riSky );
-
-	// Objects render instance.
-	ObjectRenderInst *riObj = state->getRenderPass()->allocInst<ObjectRenderInst>();
-	riObj->renderDelegate.bind( this, &SilverLiningSky::_renderObjects );
-	riObj->type = RenderPassManager::RIT_ObjectTranslucent;
-	// Render after sky objects and before CloudLayer!
-	riObj->defaultKey = 10;
-	riObj->defaultKey2 = 0;
-	riObj->translucentSort = true;
-	state->getRenderPass()->addInst( riObj );
-
 
 	ConformCloudsLayers();
 
@@ -456,31 +518,24 @@ void SilverLiningSky::_renderSky( ObjectRenderInst *ri, SceneRenderState *state,
 	if ( overrideMat )
 		return;
 
-	mMatrixSet->restoreSceneViewProjection();
-	mMatrixSet->setWorld(getRenderTransform());
-
 	// GFXTransformSaver is a handy helper class that restores
 	// the current GFX matrices to their original values when
 	// it goes out of scope at the end of the function
 	GFXTransformSaver saver;
-
-	//Set Triton Matrices
-	MatrixF view = mMatrixSet->getWorldToCamera();
-	MatrixF proj = GFX->getProjectionMatrix();
-	view = view.transpose();
-	proj = proj.transpose();
-	matrixToDoubleArray(view, mMatModelView);
-	matrixToDoubleArray(proj, mMatProjection);
-	atm->SetCameraMatrix(mMatModelView);
-	atm->SetProjectionMatrix(mMatProjection);
-
-	GFX->setStateBlock( mZEnableSB );
 
 	//SetModelviewProjectionMatrix(state);	
 	// Call DrawSky after scene has begun and modelview / projection matrices 
 	// properly set for the camera position. This will draw the sky if you pass true.
 	atm->DrawSky(true, false, 0, true, false, true);
 	//_conformLights();
+
+	atm->DrawObjects(true, true, true, mCrepuscularRays);	
+
+	/*void* shadowTexID = 0; //on DirectX9 it is a IDirect3DTexture9 *
+	SilverLining::Matrix4 lightMatrix, shadowMatrix;
+	if ( atm->GetShadowMap(shadowTexID, &lightMatrix, &shadowMatrix) )
+	{
+	}*/
 }
 
 void SilverLiningSky::matrixToDoubleArray(const MatrixF& matrix, double out[])
@@ -489,46 +544,6 @@ void SilverLiningSky::matrixToDoubleArray(const MatrixF& matrix, double out[])
 		out[i] = matrix[i];
 	}
 }
-
-void SilverLiningSky::_renderObjects( ObjectRenderInst *ri, SceneRenderState *state, BaseMatInstance *overrideMat )
-{
-	if (!atm)
-		return;
-
-	if ( overrideMat )
-		return;
-
-	mMatrixSet->restoreSceneViewProjection();
-	mMatrixSet->setWorld(getRenderTransform());
-
-	// GFXTransformSaver is a handy helper class that restores
-	// the current GFX matrices to their original values when
-	// it goes out of scope at the end of the function
-	GFXTransformSaver saver;
-
-	//Set Triton Matrices
-	MatrixF view = mMatrixSet->getWorldToCamera();
-	//MatrixF proj = GFX->getProjectionMatrix();
-	Frustum frust = state->getCameraFrustum();
-	frust.setFarDist( 20000.0f );	
-	MatrixF proj( true );
-	frust.getProjectionMatrix( &proj );
-
-	view = view.transpose();
-	proj = proj.transpose();
-	matrixToDoubleArray(view, mMatModelView);
-	matrixToDoubleArray(proj, mMatProjection);
-	atm->SetCameraMatrix(mMatModelView);
-	atm->SetProjectionMatrix(mMatProjection);
-
-	GFX->setStateBlock( mZEnableSB ); 	
-
-	// Call DrawObjects to draw all the clouds from back to front.
-
-	//atm->CullObjects();
-	atm->DrawObjects(true, true, true, 0.0);	
-}
-
 
 
 // For effects inside stratus decks, it's important to honor any requests from SilverLining
@@ -605,6 +620,35 @@ bool SilverLiningSky::ptSetTime( void *object, const char *index, const char *da
 bool SilverLiningSky::ptReadOnlySetFn( void *object, const char *index, const char *data )
 {
 	return false;
+}
+
+bool SilverLiningSky::ptSetPrecipitationType( void *object, const char *index, const char *data )
+{
+	SilverLiningSky *sky = static_cast<SilverLiningSky*>( object );
+
+	if(!dStrncmp(data, "NONE", 64))
+		sky->SetPrecipitation(SilverLining::CloudLayer::NONE, -1.0f); 
+	else if(!dStrncmp(data, "RAIN", 64))
+		sky->SetPrecipitation(SilverLining::CloudLayer::RAIN, -1.0f); 
+	else if(!dStrncmp(data, "DRY_SNOW", 64))
+		sky->SetPrecipitation(SilverLining::CloudLayer::DRY_SNOW, -1.0f); 
+	else if(!dStrncmp(data, "WET_SNOW", 64))
+		sky->SetPrecipitation(SilverLining::CloudLayer::WET_SNOW, -1.0f); 
+	else if(!dStrncmp(data, "SLEET", 64))
+		sky->SetPrecipitation(SilverLining::CloudLayer::SLEET, -1.0f);  
+	else
+		Con::errorf("Precicitation Type not valid");
+
+	return true; // ok to set value
+}
+
+bool SilverLiningSky::ptSetPrecipitationRate( void *object, const char *index, const char *data )
+{
+	SilverLiningSky *sky = static_cast<SilverLiningSky*>( object );
+	F32 precipitationRate = dAtof(data);
+	sky->SetPrecipitation(-1, precipitationRate); 
+
+	return true; // ok to set value
 }
 
 void SilverLiningSky::_onSelected()
@@ -763,8 +807,10 @@ void SilverLiningSky::SetPrecipitation(S32 precipitationType, F32 ratemmPerHour)
 	if(!isServerObject())
 		return;
 
-	mPrecipitationType = precipitationType;
-	mPrecipitationRate = ratemmPerHour;
+	if(precipitationType>=0)
+		mPrecipitationType = precipitationType;
+	if(ratemmPerHour >= 0)
+		mPrecipitationRate = ratemmPerHour;
 
 	setMaskBits( PrecipitationUpdateMask );
 }
@@ -775,7 +821,8 @@ void SilverLiningSky::ConformPrecipitations()
 		return;
 
 	atm->GetConditions()->SetPrecipitation( SilverLining::CloudLayer::NONE, 0.0f); //To clear all precipitation...
-	atm->GetConditions()->SetPrecipitation( mPrecipitationType, mPrecipitationRate);	
+	if (mPrecipitationType != SilverLining::CloudLayer::NONE && mPrecipitationRate != 0)
+		atm->GetConditions()->SetPrecipitation( mPrecipitationType, mPrecipitationRate);		
 }
 
 Point3F SilverLiningSky::getSunDir()
@@ -826,5 +873,3 @@ DefineEngineFunction( GetSunDir, Point3F, (),,
 	SilverLiningSky::atm->GetSunOrMoonPosition(&x, &y, &z);   
 	return Point3F(x,-z,y);
 }
-
-
