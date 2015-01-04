@@ -88,6 +88,7 @@ public:
    SilverLiningSky();
    ~SilverLiningSky();
 
+   // The Atmosphere object is the main interface to SilverLining.
    static SilverLining::Atmosphere* atm;
 
    //Matrices
@@ -97,6 +98,8 @@ public:
    bool onAdd();
 
    void InitializeAtm();
+
+   void ConfigureClouds();
 
    void matrixToDoubleArray(const MatrixF& matrix, double out[]);
 
@@ -170,6 +173,7 @@ protected:
    LightInfo *mLight;
 
    bool mCastShadows;
+   bool mLensFlare;
    F32 mBrightness;
    bool mDirty;
 

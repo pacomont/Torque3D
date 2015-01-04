@@ -70,7 +70,8 @@ SilverLining::Atmosphere* SilverLiningSky::atm = NULL;
 
 const char* cloudTypesVector[NUM_CLOUD_TYPES] = { "CIRROCUMULUS",	"CIRRUS_FIBRATUS", "STRATUS", "CUMULUS_MEDIOCRIS", "CUMULUS_CONGESTUS", "CUMULUS_CONGESTUS_HI_RES", "CUMULONIMBUS_CAPPILATUS", 	"STRATOCUMULUS", "TOWERING_CUMULUS", "SANDSTORM" };
 
-#define kVisibility 20000.0
+// Simulated visibility in meters, for fog effects.
+#define kVisibility 30000.0
 
 IMPLEMENT_CO_NETOBJECT_V1(SilverLiningSky);
 
@@ -89,17 +90,7 @@ SilverLiningSky::SilverLiningSky()
 	mLight = LightManager::createLightInfo();
 	mLight->setType( LightInfo::Vector );
 
-	for (S32 i = 0; i < NUM_CLOUD_TYPES; i++) {
-		mCloudLayerTypeName[i] = cloudTypesVector[i];   
-		mCloudLayerHandle[i] = 0;
-		mCloudLayerEnabled[i] = false;
-		mCloudLayerBaseAltitude[i] = 1000.0f;
-		mCloudLayerThickness[i] = 90.0f;
-		mCloudLayerBaseWidth[i] = 20000.0f;
-		mCloudLayerDensity[i] = 0.5f;   
-		mCloudLayerMustConform[i] = false; 
-		mCloudLayerUpdate[i] = true; 
-	}
+	ConfigureClouds();
 	
 	mSelectPrecipitationActive = SilveLiningPrecipitationTypes::NONE;
 	mPrecipitationType = SilverLining::CloudLayer::NONE;
@@ -111,11 +102,13 @@ SilverLiningSky::SilverLiningSky()
 	setTime( "2014 12 22 15 30 00" );
 
 	mCastShadows = true;
+	mLensFlare = true;
 	mBrightness = 1.0f;
-
 	mCrepuscularRays = 0.0f;
-	mWindSpeed = 0.0f;
-	mWindDirection = 0.0f;
+
+	// Set up wind blowing northeast at 50 meters/sec
+	mWindSpeed = 50.0f;
+	mWindDirection = 225.0f;
 	mWindHandle = 0;
 }
 
@@ -151,60 +144,6 @@ bool SilverLiningSky::onAdd()
 	return true;
 }
 
-void SilverLiningSky::InitializeAtm()
-{
-	// Tell SilverLining what your axis conventions are.
-	const VectorF up(0, 0, 1), right(0, 1, 0);
-	atm->SetUpVector(up.x, up.y, up.z);
-	atm->SetRightVector(right.x, right.y, right.z);
-	atm->DisableFarCulling(true);
-
-	LPDIRECT3DDEVICE9 D3DDevice = dynamic_cast<GFXD3D9Device *>(GFX)->getDevice();
-
-	int err = atm->Initialize(SilverLining::Atmosphere::DIRECTX9,
-		".\\Resources\\", true, D3DDevice);
-
-	if (err == SilverLining::Atmosphere::E_NOERROR)
-	{
-		atm->SetConfigOption("rain-use-depth-buffer", "yes"); 
-		atm->SetConfigOption("snow-use-depth-buffer", "yes"); 
-		atm->SetConfigOption("sleet-use-depth-buffer", "yes"); 
-		atm->SetConfigOption("rain-minimum-pixels", "0"); 
-		atm->SetConfigOption("sleet-minimum-pixels", "0"); 
-		atm->SetConfigOption("snow-minimum-pixels", "0"); 
-
-		atm->SetConfigOption("snow-near-clip", "0.1"); 
-		atm->SetConfigOption("rain-near-clip", "0.1"); 
-		atm->SetConfigOption("sleet-near-clip", "0.1"); 
-
-		//atm->SetConfigOption("enable-precipitation-visibility-effects", "no"); 
-
-		// Add some atmospheric perspective
-		atm->GetConditions()->SetVisibility(kVisibility);
-
-		// Add a little wind
-		setWindSetting(15.0f, 180.0f);
-
-		// Set our location (change this to your own latitude and longitude)
-		SilverLining::Location loc;
-		loc.SetAltitude(0);
-		loc.SetLatitude(41.65f);
-		loc.SetLongitude(0.86f);
-		atm->GetConditions()->SetLocation(loc);
-
-		atm->GetConditions()->SetMillisecondTimer(&timer);
-
-		atm->EnableLensFlare(true);
-
-		//atm->SetRandomNumberGenerator(&random);
-
-		SetSilverLiningTime();
-
-		ConformPrecipitations();
-	}
-}
-
-
 void SilverLiningSky::onRemove()
 {
 	removeFromScene();
@@ -221,6 +160,126 @@ void SilverLiningSky::onRemove()
 	Parent::onRemove();
 }
 
+void SilverLiningSky::InitializeAtm()
+{
+	LPDIRECT3DDEVICE9 D3DDevice = dynamic_cast<GFXD3D9Device *>(GFX)->getDevice();
+
+	int err = atm->Initialize(SilverLining::Atmosphere::DIRECTX9,
+		".\\Resources\\", true, D3DDevice);
+
+	if (err == SilverLining::Atmosphere::E_NOERROR)
+	{
+		// Tell SilverLining what your axis conventions are.
+		// Set your frame of reference (call this before setting up clouds!)
+		atm->SetUpVector(0, 0, 1);
+		atm->SetRightVector(1, 0, 0);
+
+		// The below settings will disable precipitation effects that depend on modifying the projection matrix,
+		// such as pulling in the near clip plane and de-projecting particles to enforce minimum particle sizes. 
+		// There is something about Torque's projection matrix that it just can't figure out it seems.
+		atm->SetConfigOption("rain-use-depth-buffer", "yes"); 
+		atm->SetConfigOption("snow-use-depth-buffer", "yes"); 
+		atm->SetConfigOption("sleet-use-depth-buffer", "yes"); 
+		atm->SetConfigOption("rain-minimum-pixels", "0"); 
+		atm->SetConfigOption("sleet-minimum-pixels", "0"); 
+		atm->SetConfigOption("snow-minimum-pixels", "0"); 
+		atm->SetConfigOption("snow-near-clip", "0.2"); 
+		atm->SetConfigOption("rain-near-clip", "0.2"); 
+		atm->SetConfigOption("sleet-near-clip", "0.2"); 
+		atm->SetConfigOption("enable-precipitation-visibility-effects", "no"); 
+
+		atm->SetConfigOption("use-cloud-backdrops", "no"); 
+
+		// Add some atmospheric perspective
+		atm->GetConditions()->SetVisibility(kVisibility);
+
+		// Add a little wind
+		setWindSetting(15.0f, 180.0f);
+
+		// Set our location (change this to your own latitude and longitude)
+		SilverLining::Location loc;
+		loc.SetAltitude(0);
+		loc.SetLatitude(41.65f);
+		loc.SetLongitude(0.86f);
+		atm->GetConditions()->SetLocation(loc);
+
+		atm->GetConditions()->SetMillisecondTimer(&timer);
+
+		atm->EnableLensFlare(mLensFlare);
+
+		//atm->SetRandomNumberGenerator(&random);
+
+		SetSilverLiningTime();
+
+		ConformPrecipitations();
+	}
+}
+
+void SilverLiningSky::ConfigureClouds()
+{
+	for (S32 i = 0; i < NUM_CLOUD_TYPES; i++) {
+		mCloudLayerTypeName[i] = cloudTypesVector[i];   
+		mCloudLayerHandle[i] = 0;
+		mCloudLayerEnabled[i] = false;
+		mCloudLayerBaseAltitude[i] = 1000.0f;
+		mCloudLayerThickness[i] = 90.0f;
+		mCloudLayerBaseWidth[i] = 20000.0f;
+		mCloudLayerDensity[i] = 0.5f;   
+		mCloudLayerMustConform[i] = false; 
+		mCloudLayerUpdate[i] = true; 
+	}
+
+	// Configure high cirrus clouds
+	int i=CIRRUS_FIBRATUS; 
+	mCloudLayerBaseAltitude[i] = 6000;
+	mCloudLayerThickness[i] = 0;
+	mCloudLayerBaseWidth[i] = 100000;
+	mCloudLayerDensity[i] = 0.5f; 
+
+	// Configure a cumulus congestus deck with 80% sky coverage.
+	i=CUMULUS_CONGESTUS; 
+	mCloudLayerBaseAltitude[i] = 1500;
+	mCloudLayerThickness[i] = 100;
+	mCloudLayerBaseWidth[i] = 30000;
+	mCloudLayerDensity[i] = 0.8f; 
+
+	// Sets up a solid stratus deck.
+	i=STRATUS; 
+	mCloudLayerBaseAltitude[i] = 1000;
+	mCloudLayerThickness[i] = 600;
+	mCloudLayerBaseWidth[i] = 0; //Is Infinite
+	mCloudLayerDensity[i] = 0.5f; 
+
+	// A thunderhead; note a Cumulonimbus cloud layer contains a single cloud.
+	i=CUMULONIMBUS_CAPPILATUS; 
+	mCloudLayerBaseAltitude[i] = 1000;
+	mCloudLayerThickness[i] = 3000;
+	mCloudLayerBaseWidth[i] = 5000;
+	mCloudLayerDensity[i] = 0.5f; 
+
+	// Cumulus mediocris are little, puffy clouds. Keep the density low for realism, otherwise
+	// you'll have a LOT of clouds because they are small.
+	i=CUMULUS_MEDIOCRIS; 
+	mCloudLayerBaseAltitude[i] = 1000;
+	mCloudLayerThickness[i] = 100;
+	mCloudLayerBaseWidth[i] = 20000;
+	mCloudLayerDensity[i] = 0.5f; 
+
+	// Stratocumulus clouds are rendered with GPU ray-casting. On systems that can support it
+	// (Shader model 3.0+) this enables very dense cloud layers with per-fragment lighting.
+	i=STRATOCUMULUS; 
+	mCloudLayerBaseAltitude[i] = 1000;
+	mCloudLayerThickness[i] = 3000;
+	mCloudLayerBaseWidth[i] = 30000;
+	mCloudLayerDensity[i] = 1.0f; 
+
+	// Sandstorms should be positioned at ground level. There is no need to set their
+	// density or thickness.
+	i=SANDSTORM; 
+	mCloudLayerBaseAltitude[i] = 0;
+	mCloudLayerBaseWidth[i] = 50000;
+}
+
 void SilverLiningSky::_onTextureEvent( GFXTexCallbackCode code ) 
 { 
 	if(atm) { 
@@ -235,6 +294,8 @@ void SilverLiningSky::_conformLights()
 {
 	if(!atm)
 		return;
+
+	atm->EnableLensFlare(mLensFlare);
 
 	atm->GetSunOrMoonPosition(&mSunDir.x, &mSunDir.y, &mSunDir.z);   
 	mLightDir = -mSunDir;
@@ -285,19 +346,36 @@ void SilverLiningSky::inspectPostApply()
 }
 
 void SilverLiningSky::initPersistFields()
-{
-	addGroup("Settings");	
+{	
+	addGroup( "Misc" );
+
 	addProtectedField( "DateTime", TypeString, Offset( mDateTime, SilverLiningSky ), &SilverLiningSky::ptSetTime, &defaultProtectedGetFn,
 		"The horizontal angle of the sun measured clockwise from the positive Y world axis. This field is networked." );
 	addField( "crepuscularRays", TypeF32, Offset( mCrepuscularRays, SilverLiningSky ),
 		"Set to a value greater than 0 to draw crepuscular rays (AKA ""God rays"") after the clouds." );
+	addField( "lensFlare", TypeBool, Offset( mLensFlare, SilverLiningSky ),
+		"Enable or disable a big, flashy lens flare effect when the sun is visible in the scene." );
+
+	endGroup( "Misc" );
+
+	addGroup("Wind Effect");
 
 	addField( "WindSpeed", TypeF32, Offset( mWindSpeed, SilverLiningSky ),
 		"Set the wind velocity within this WindVolume, in meters per second." );
 	addField( "WindDirection", TypeF32, Offset( mWindDirection, SilverLiningSky ),
 		"Sets the wind direction, in degrees East from North. This is the direction the wind is"
 		"coming from, not the direction it is blowing toward." );
-	endGroup("Settings");
+
+	endGroup("Wind Effect");
+
+	addGroup( "Lighting" );
+
+	addField( "castShadows", TypeBool, Offset( mCastShadows, SilverLiningSky ),
+		"Enables/disables shadows cast by objects due to SilverLiningSky light." );
+	addField( "brightness", TypeF32, Offset( mBrightness, SilverLiningSky ),
+		"The brightness of the ScatterSky's light object." );
+
+	endGroup( "Lighting" );
 
 	addGroup("Cloud Layers");
 	addArray( "Clouds", NUM_CLOUD_TYPES );
@@ -329,19 +407,6 @@ void SilverLiningSky::initPersistFields()
 		"resources/SilverLining.config, which is 30 by default.");///< SoftSelectAction brush filtering
 	endGroup("Precipitation");
 
-	// We only add the basic lighting options that all lighting
-	// systems would use... the specific lighting system options
-	// are injected at runtime by the lighting system itself.
-
-	addGroup( "Lighting" );
-
-	addField( "castShadows", TypeBool, Offset( mCastShadows, SilverLiningSky ),
-		"Enables/disables shadows cast by objects due to SilverLiningSky light." );
-	addField( "brightness", TypeF32, Offset( mBrightness, SilverLiningSky ),
-		"The brightness of the ScatterSky's light object." );
-
-	endGroup( "Lighting" );
-
 	Parent::initPersistFields();
 }
 
@@ -353,7 +418,7 @@ void SilverLiningSky::setWindSetting( F32 windSpeed, F32 windDirection )
 
 	// Add a little wind
 	if(atm)
-	{		
+	{				
 		if(mWindHandle != 0)
 			mWindHandle = atm->GetConditions()->RemoveWindVolume(mWindHandle);
 		SilverLining::WindVolume wv;
@@ -382,6 +447,7 @@ U32 SilverLiningSky::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
 	{
 		stream->write( mBrightness );
 		stream->writeFlag( mCastShadows );
+		stream->writeFlag( mLensFlare );
 
 		stream->write( mCrepuscularRays );
 
@@ -433,6 +499,7 @@ void SilverLiningSky::unpackUpdate(NetConnection *con, BitStream *stream)
 	{
 		stream->read( &mBrightness );
 		mCastShadows = stream->readFlag();
+		mLensFlare = stream->readFlag();
 
 		stream->read( &mCrepuscularRays );
 
@@ -481,15 +548,8 @@ void SilverLiningSky::prepRenderImage( SceneRenderState *state )
 		return;
 
 	//Set Triton Matrices
-	MatrixF view = GFX->getWorldMatrix();
-	
-	//MatrixF proj = GFX->getProjectionMatrix();
-	Frustum frust = GFX->getFrustum();
-	frust.setNearDist( 0.1f );	
-	frust.setFarDist( kVisibility );	
-	MatrixF proj( true );
-	frust.getProjectionMatrix( &proj );
-
+	MatrixF view = GFX->getWorldMatrix();	
+	MatrixF proj = GFX->getProjectionMatrix();
 	view = view.transpose();
 	proj = proj.transpose();
 	matrixToDoubleArray(view, mMatModelView);
@@ -760,6 +820,7 @@ void SilverLiningSky::ConformCloudsLayers()
 		switch (i)
 		{
 		case STRATUS:
+			cl->SetIsInfinite(true);
 			break;
 		case CIRRUS_FIBRATUS:
 			cl->SetThickness(0);
@@ -771,13 +832,15 @@ void SilverLiningSky::ConformCloudsLayers()
 		case CUMULUS_CONGESTUS:
 			cl->SetIsInfinite(true);
 			cl->SetPrecipitation(SilverLining::CloudLayer::NONE, 0);
-			cl->SetCloudAnimationEffects(0.01, false);
+			cl->SetCloudAnimationEffects(0.1, false);
+			cl->SetAlpha(0.7);
 			cl->SetFadeTowardEdges(true);
 			break;
 		case CUMULONIMBUS_CAPPILATUS:
 			cl->SetPrecipitation(SilverLining::CloudLayer::RAIN, 30);
 			break;
 		case STRATOCUMULUS:
+			cl->SetAlpha(1.0);		
 			cl->SetIsInfinite(true);
 			cl->SetFadeTowardEdges(true);
 
