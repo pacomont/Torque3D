@@ -147,6 +147,9 @@ public:
    virtual GFXWindowTarget *getGFXTarget()=0;
 
    /// Set the video mode for this window.
+   virtual void setVideoMode(const GFXVideoMode &mode, bool border)=0;
+
+   /// Set the video mode for this window with border.
    virtual void setVideoMode(const GFXVideoMode &mode)=0;
 
    /// Get our current video mode - if the window has been resized, it will

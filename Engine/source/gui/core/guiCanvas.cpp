@@ -2606,7 +2606,7 @@ ConsoleMethod( GuiCanvas, setFocus, void, 2,2, "() - Claim OS input focus for th
       window->setFocus();
 }
 
-ConsoleMethod( GuiCanvas, setVideoMode, void, 5, 8,
+ConsoleMethod( GuiCanvas, setVideoMode, void, 5, 9,
                "(int width, int height, bool fullscreen, [int bitDepth], [int refreshRate], [int antialiasLevel] )\n"
                "Change the video mode of this canvas. This method has the side effect of setting the $pref::Video::mode to the new values.\n\n"
                "\\param width The screen width to set.\n"
@@ -2614,7 +2614,8 @@ ConsoleMethod( GuiCanvas, setVideoMode, void, 5, 8,
                "\\param fullscreen Specify true to run fullscreen or false to run in a window\n"
                "\\param bitDepth [optional] The desired bit-depth. Defaults to the current setting. This parameter is ignored if you are running in a window.\n"
                "\\param refreshRate [optional] The desired refresh rate. Defaults to the current setting. This parameter is ignored if you are running in a window"
-					"\\param antialiasLevel [optional] The level of anti-aliasing to apply 0 = none" )
+					"\\param antialiasLevel [optional] The level of anti-aliasing to apply 0 = none"
+					"\param border [optional] window border style, 0 = none"  )
 {
    if (!object->getPlatformWindow())
       return;
@@ -2697,7 +2698,13 @@ ConsoleMethod( GuiCanvas, setVideoMode, void, 5, 8,
       vm.antialiasLevel = dAtoi(argv[7]);
    }
 
-   object->getPlatformWindow()->setVideoMode(vm);
+	   if ((argc > 8) && (dStrlen(argv[8]) > 0))
+	   {
+		   bool border = dAtoi(argv[8])>0;
+		   object->getPlatformWindow()->setVideoMode(vm, border);
+	   }
+	   else
+		   object->getPlatformWindow()->setVideoMode(vm);
 
    // Store the new mode into a pref.
    Con::setVariable( "$pref::Video::mode", vm.toString() );

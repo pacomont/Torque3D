@@ -136,6 +136,14 @@ const GFXVideoMode & Win32Window::getVideoMode()
 	return mVideoMode;
 }
 
+void Win32Window::setVideoMode( const GFXVideoMode &mode, bool border )
+{
+	mWindowedWindowStyle |= WS_OVERLAPPEDWINDOW | WS_THICKFRAME | WS_CAPTION;
+	if(!border)
+		mWindowedWindowStyle ^= WS_OVERLAPPEDWINDOW | WS_THICKFRAME | WS_CAPTION;
+	setVideoMode(mode);
+}
+
 void Win32Window::setVideoMode( const GFXVideoMode &mode )
 {
    bool needCurtain = (mVideoMode.fullScreen != mode.fullScreen);

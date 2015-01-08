@@ -166,6 +166,7 @@ public:
    virtual GFXWindowTarget *getGFXTarget();
    
    virtual void setVideoMode(const GFXVideoMode &mode);
+   virtual void setVideoMode( const GFXVideoMode &mode, bool border );
    virtual const GFXVideoMode &getVideoMode();
    virtual bool clearFullscreen();
    virtual bool isFullscreen();

@@ -103,7 +103,7 @@ function configureCanvas()
       "--------------");
 
    // Actually set the new video mode
-   Canvas.setVideoMode(%resX, %resY, %fs, %bpp, %rate, %fsaa);
+   Canvas.setVideoMode(%resX, %resY, %fs, %bpp, %rate, %fsaa, 0);
    
    // FXAA piggybacks on the FSAA setting in $pref::Video::mode.
    if ( isObject( FXAA_PostEffect ) )
