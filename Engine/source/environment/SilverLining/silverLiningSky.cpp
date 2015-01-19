@@ -833,7 +833,7 @@ void SilverLiningSky::ConformCloudsLayers()
 			cl->SetIsInfinite(true);
 			cl->SetPrecipitation(SilverLining::CloudLayer::NONE, 0);
 			cl->SetCloudAnimationEffects(0.1, false);
-			cl->SetAlpha(0.7);
+			cl->SetAlpha(0.8);
 			cl->SetFadeTowardEdges(true);
 			break;
 		case CUMULONIMBUS_CAPPILATUS:
