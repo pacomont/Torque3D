@@ -1,0 +1,30 @@
+# CMake generation dependency list for this directory.
+D:/Repositorios/Torque3D/Tools/CMake/CMakeLists.txt
+D:/Repositorios/Torque3D/Tools/CMake/basics.cmake
+D:/Repositorios/Torque3D/Tools/CMake/torque3d.cmake
+D:/Repositorios/Torque3D/Tools/CMake/libraries/libvorbis.cmake
+D:/Repositorios/Torque3D/Tools/CMake/libraries/libogg.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CheckIncludeFiles.cmake
+D:/Repositorios/Torque3D/Engine/lib/libogg/include/ogg/config_types.h.in
+D:/Repositorios/Torque3D/Tools/CMake/libraries/nativeFileDialogs.cmake
+D:/Repositorios/Torque3D/Tools/CMake/modules/module_bullet.cmake
+D:/Repositorios/Torque3D/Tools/CMake/modules/module_hydra.cmake
+D:/Repositorios/Torque3D/Tools/CMake/modules/module_navigation.cmake
+D:/Repositorios/Torque3D/Tools/CMake/libraries/recast.cmake
+D:/Repositorios/Torque3D/Tools/CMake/modules/module_oculusVR.cmake
+D:/Repositorios/Torque3D/Tools/CMake/modules/module_openvr.cmake
+D:/Repositorios/Torque3D/Tools/CMake/modules/module_physx3.cmake
+D:/Repositorios/Torque3D/Tools/CMake/modules/module_testing.cmake
+D:/Repositorios/Torque3D/Tools/CMake/torqueConfig.h.in
+D:/Repositorios/Torque3D/Tools/CMake/libraries/lmng.cmake
+D:/Repositorios/Torque3D/Tools/CMake/libraries/lpng.cmake
+D:/Repositorios/Torque3D/Tools/CMake/libraries/lungif.cmake
+D:/Repositorios/Torque3D/Tools/CMake/libraries/ljpeg.cmake
+D:/Repositorios/Torque3D/Tools/CMake/libraries/zlib.cmake
+D:/Repositorios/Torque3D/Tools/CMake/libraries/tinyxml.cmake
+D:/Repositorios/Torque3D/Tools/CMake/libraries/opcode.cmake
+D:/Repositorios/Torque3D/Tools/CMake/libraries/squish.cmake
+D:/Repositorios/Torque3D/Tools/CMake/libraries/collada.cmake
+D:/Repositorios/Torque3D/Tools/CMake/libraries/pcre.cmake
+D:/Repositorios/Torque3D/Tools/CMake/libraries/convexDecomp.cmake
+D:/Repositorios/Torque3D/Tools/CMake/libraries/glad.cmake

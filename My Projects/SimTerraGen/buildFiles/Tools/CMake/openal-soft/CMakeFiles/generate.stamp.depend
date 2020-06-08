@@ -1,0 +1,58 @@
+# CMake generation dependency list for this directory.
+D:/Repositorios/Torque3D/Engine/lib/openal-soft/CMakeLists.txt
+C:/Program Files/CMake/share/cmake-3.7/Modules/CheckFunctionExists.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CheckLibraryExists.cmake
+D:/Repositorios/Torque3D/Engine/lib/openal-soft/cmake/CheckSharedFunctionExists.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CheckIncludeFile.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CheckIncludeFiles.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CheckSymbolExists.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CheckCCompilerFlag.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CheckCSourceCompiles.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CMakeCheckCompilerFlagCommonPatterns.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CheckCSourceCompiles.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CheckTypeSize.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CheckIncludeFile.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CheckIncludeFileCXX.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CheckStructHasMember.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CheckCSourceCompiles.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CheckCXXSourceCompiles.cmake
+D:/Repositorios/Torque3D/Engine/lib/openal-soft/cmake/CheckFileOffsetBits.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/GNUInstallDirs.cmake
+D:/Repositorios/Torque3D/Engine/lib/openal-soft/cmake/FindALSA.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/FindPackageHandleStandardArgs.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/FindPackageMessage.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CMakeParseArguments.cmake
+D:/Repositorios/Torque3D/Engine/lib/openal-soft/cmake/FindOSS.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/FindPackageHandleStandardArgs.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/FindPackageMessage.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CMakeParseArguments.cmake
+D:/Repositorios/Torque3D/Engine/lib/openal-soft/cmake/FindAudioIO.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/FindPackageHandleStandardArgs.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/FindPackageMessage.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CMakeParseArguments.cmake
+D:/Repositorios/Torque3D/Engine/lib/openal-soft/cmake/FindSoundIO.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/FindPackageHandleStandardArgs.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/FindPackageMessage.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CMakeParseArguments.cmake
+D:/Repositorios/Torque3D/Engine/lib/openal-soft/cmake/FindQSA.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/FindPackageHandleStandardArgs.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/FindPackageMessage.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CMakeParseArguments.cmake
+D:/Repositorios/Torque3D/Engine/lib/openal-soft/cmake/FindDSound.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/FindPackageHandleStandardArgs.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/FindPackageMessage.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CMakeParseArguments.cmake
+D:/Repositorios/Torque3D/Engine/lib/openal-soft/cmake/FindPortAudio.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/FindPackageHandleStandardArgs.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/FindPackageMessage.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CMakeParseArguments.cmake
+D:/Repositorios/Torque3D/Engine/lib/openal-soft/cmake/FindPulseAudio.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/FindPackageHandleStandardArgs.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/FindPackageMessage.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CMakeParseArguments.cmake
+D:/Repositorios/Torque3D/Engine/lib/openal-soft/cmake/FindJACK.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/FindPackageHandleStandardArgs.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/FindPackageMessage.cmake
+C:/Program Files/CMake/share/cmake-3.7/Modules/CMakeParseArguments.cmake
+D:/Repositorios/Torque3D/Engine/lib/openal-soft/config.h.in
+D:/Repositorios/Torque3D/Engine/lib/openal-soft/openal.pc.in
