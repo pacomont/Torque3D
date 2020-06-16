@@ -158,10 +158,28 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
       printf("Band has a color table with %d entries.\n",
          poBand->GetColorTable()->GetColorEntryCount());
 
+   if (width != height || !isPow2(width))
+   {
+      printf("Height map must be square and power of two in size!");
+      //return false;
+
+      S32 maxdim = getMax(width, height);
+      if (!isPow2(maxdim))
+      {
+         //Rounding up to next power of 2
+         int power = 1;
+         while (power < maxdim)
+            power *= 2;
+
+         maxdim = power;
+      }
+
+      width = maxdim;
+      height = maxdim;
+   }
 
    // allocate the bitmap space and init internal variables...
    bitmap->allocateBitmap(width, height, false, GFXFormatR5G6B5); //16bits grey
-
 
    //Reading Raster Data
 
@@ -177,7 +195,7 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
 
       U8 *rowDest = bitmap->getAddress(0, i);
       
-      for (S32 j = 0; j < width; j++)
+      for (S32 j = 0; j < nXSize; j++)
       {                  
          U16 * pixelLocation = reinterpret_cast<U16 *>(&rowDest[j * 3]);
          pixelLocation[0] = pafScanline[j];
