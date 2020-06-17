@@ -724,6 +724,30 @@ void TerrainFile::import(  const GBitmap &heightMap,
          }
       }
    }
+   else if(heightMap.getFormat() == GFXFormatR8G8B8A8)
+   {
+      const F32 *iBits = (const F32*)heightMap.getBits();
+      if (flipYAxis)
+      {
+         for (U32 i = 0; i < mSize * mSize; i++)
+         {
+            F32 height = *iBits;
+            *oBits = (U16)mCeil(floatToFixed(height));
+            ++oBits;
+            ++iBits;
+         }
+      }
+      else
+      {
+         for (S32 y = mSize - 1; y >= 0; y--) {
+            for (U32 x = 0; x < mSize; x++) {
+               F32 height = *iBits;
+               mHeightMap[x + y * mSize] = (U16)mCeil(floatToFixed(height));
+               ++iBits;
+            }
+         }
+      }
+   }
    else
    {
       const F32 toFixedPoint = ( 1.0f / (F32)U8_MAX ) * floatToFixed( heightScale );

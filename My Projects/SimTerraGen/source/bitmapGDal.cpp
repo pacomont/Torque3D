@@ -195,7 +195,7 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
    }
 
    // allocate the bitmap space and init internal variables...
-   bitmap->allocateBitmap(width, height, false, GFXFormatR5G6B5); //16bits grey
+   bitmap->allocateBitmap(width, height, false, GFXFormatR8G8B8A8); //32 bit float
 
    //Reading Raster Data
 
@@ -213,8 +213,8 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
       
       for (S32 j = 0; j < nXSize; j++)
       {                  
-         U16 * pixelLocation = reinterpret_cast<U16 *>(&rowDest[j * 3]);
-         pixelLocation[0] = pafScanline[j];
+         F32 * pixelLocation = reinterpret_cast<F32 *>(&rowDest[j * 4]);
+         pixelLocation[0] = pafScanline[j] - min;
       }  
    }
 
