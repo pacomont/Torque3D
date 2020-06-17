@@ -33,6 +33,8 @@
 
 #include "gfx/bitmap/gBitmap.h"
 
+#include "core/stream/fileStream.h"
+
  void CPL_STDCALL HobusGDALErrorHandler(CPLErr eErrClass, int err_no, const char *msg);
 
  void CPL_STDCALL HobusGDALErrorHandler(CPLErr eErrClass, int err_no, const char* msg)
@@ -101,10 +103,24 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
    GDALDriver *pDriverTiff;
    double transform[6];
 
-   const char *input = "D:/Repositorios/Torque3D/My Projects/SimTerraGen/game/levels/cerro_muriano.tif";
-   
+   FileStream  *newStream = new FileStream;
 
-   GDALDataset *preadDS = (GDALDataset *) GDALOpen(input, GA_ReadOnly);
+   const char *inFileName = "./dummy.dat";
+
+   bool success = newStream->open(inFileName, Torque::FS::File::Write);
+
+   if (!success)
+   {
+      delete newStream;
+      return false;
+   }
+
+   newStream->copyFrom(&stream);   
+
+   newStream->close();
+   delete newStream;
+
+   GDALDataset *preadDS = (GDALDataset *) GDALOpen(inFileName, GA_ReadOnly);
    if (preadDS == NULL)
    {
       return false;
