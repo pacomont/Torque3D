@@ -201,6 +201,20 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
 
    int   nXSize = poBand->GetXSize();
    int   nYSize = poBand->GetYSize();
+   double min = poBand->GetMinimum();
+   double max = poBand->GetMaximum();
+
+   bitmap->sGeoRef.topLeftX = adfGeoTransform[0];
+   bitmap->sGeoRef.topLeftY = adfGeoTransform[3];
+   bitmap->sGeoRef.pixelResolX = adfGeoTransform[1];
+   bitmap->sGeoRef.pixelResolY = adfGeoTransform[5];
+   bitmap->sGeoRef.nXSize = nXSize;
+   bitmap->sGeoRef.nYSize = nYSize;
+   bitmap->sGeoRef.minimum = min;
+   bitmap->sGeoRef.maximum = max;
+   bitmap->sGeoRef.defined = true;
+
+   //bitmap->
    float *pafScanline = static_cast<float *>(CPLMalloc(sizeof(float) * nXSize));
 
    for (int i = 0; i<nYSize; i++)

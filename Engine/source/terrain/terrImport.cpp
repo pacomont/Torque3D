@@ -304,8 +304,15 @@ bool TerrainBlock::import( const GBitmap &heightMap,
    // The file does a bunch of the work.
    mFile->import( heightMap, heightScale, layerMap, materials, flipYAxis );
 
-   // Set the square size.
-   mSquareSize = metersPerPixel;
+   if(heightMap.sGeoRef.defined)
+   {
+      mSquareSize = heightMap.sGeoRef.pixelResolX;
+   }
+   else
+   {
+      // Set the square size.
+      mSquareSize = metersPerPixel;
+   }
 
    if ( isProperlyAdded() )
    {
