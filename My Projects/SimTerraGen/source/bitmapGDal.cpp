@@ -35,6 +35,8 @@
 
 #include "core/stream/fileStream.h"
 
+#include "console/console.h"
+
  void CPL_STDCALL HobusGDALErrorHandler(CPLErr eErrClass, int err_no, const char *msg);
 
  void CPL_STDCALL HobusGDALErrorHandler(CPLErr eErrClass, int err_no, const char* msg)
@@ -126,22 +128,27 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
       return false;
    }
 
+   
+
+
    double        adfGeoTransform[6];
-   printf("Driver: %s/%s\n",
+   Con::printf("Driver: %s/%s\n",
       preadDS->GetDriver()->GetDescription(),
       preadDS->GetDriver()->GetMetadataItem(GDAL_DMD_LONGNAME));
-   printf("Size is %dx%dx%d\n",
+   Con::printf("Size is %dx%dx%d\n",
       preadDS->GetRasterXSize(), preadDS->GetRasterYSize(),
       preadDS->GetRasterCount());
    if (preadDS->GetProjectionRef() != NULL)
-      printf("Projection is `%s'\n", preadDS->GetProjectionRef());
+      Con::printf("Projection is `%s'\n", preadDS->GetProjectionRef());
    if (preadDS->GetGeoTransform(adfGeoTransform) == CE_None)
    {
-      printf("Origin = (%.6f,%.6f)\n",
+      Con::printf("Origin = (%.6f,%.6f)\n",
          adfGeoTransform[0], adfGeoTransform[3]);
-      printf("Pixel Size = (%.6f,%.6f)\n",
+      Con::printf("Pixel Size = (%.6f,%.6f)\n",
          adfGeoTransform[1], adfGeoTransform[5]);
    }
+
+
    //adfGeoTransform[0] /* top left x */
    //adfGeoTransform[1] /* w-e pixel resolution */
    //adfGeoTransform[2] /* 0 */
@@ -152,92 +159,234 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
    S32 width = preadDS->GetRasterXSize();
    S32 height = preadDS->GetRasterYSize();
 
-   GDALRasterBand  *poBand;
    int             nBlockXSize, nBlockYSize;
    int             bGotMin, bGotMax;
    double          adfMinMax[2];
-   poBand = preadDS->GetRasterBand(1);
-   poBand->GetBlockSize(&nBlockXSize, &nBlockYSize);
-   printf("Block=%dx%d Type=%s, ColorInterp=%s\n",
-      nBlockXSize, nBlockYSize,
-      GDALGetDataTypeName(poBand->GetRasterDataType()),
-      GDALGetColorInterpretationName(
-         poBand->GetColorInterpretation()));
-   adfMinMax[0] = poBand->GetMinimum(&bGotMin);
-   adfMinMax[1] = poBand->GetMaximum(&bGotMax);
-   if (!(bGotMin && bGotMax))
-      GDALComputeRasterMinMax((GDALRasterBandH)poBand, TRUE, adfMinMax);
-   printf("Min=%.3fd, Max=%.3f\n", adfMinMax[0], adfMinMax[1]);
-   if (poBand->GetOverviewCount() > 0)
-      printf("Band has %d overviews.\n", poBand->GetOverviewCount());
+
+   GDALDataset::Bands bands = preadDS->GetBands();
+   S32 nRasterCount = preadDS->GetRasterCount();
+
+   GDALRasterBand *poBand = preadDS->GetRasterBand(1);
+   GDALDataType gddt = poBand->GetRasterDataType();
+   GDALColorInterp gdci = poBand->GetColorInterpretation();
+
+   GFXFormat format = GFXFormatR8G8B8;
+   S32 bytes_detph = 1;  
+   GDALColorTable* ct = NULL;
+   
+
    if (poBand->GetColorTable() != NULL)
-      printf("Band has a color table with %d entries.\n",
-         poBand->GetColorTable()->GetColorEntryCount());
-
-   if (width != height || !isPow2(width))
    {
-      printf("Height map must be square and power of two in size!");
-      //return false;
+      Con::printf("Band has a color table with %d entries.\n",
+         poBand->GetColorTable()->GetColorEntryCount());
+      ct = poBand->GetColorTable();
 
-      S32 maxdim = getMax(width, height);
-      if (!isPow2(maxdim))
-      {
-         //Rounding up to next power of 2
-         int power = 1;
-         while (power < maxdim)
-            power *= 2;
-
-         maxdim = power;
-      }
-
-      width = maxdim;
-      height = maxdim;
+      Con::printf("PaletteInterpretation returning: %d", ct->GetPaletteInterpretation());
    }
 
-   // allocate the bitmap space and init internal variables...
-   bitmap->allocateBitmap(width, height, false, GFXFormatR8G8B8A8); //32 bit float
-
-   //Reading Raster Data
-
-   int   nXSize = poBand->GetXSize();
-   int   nYSize = poBand->GetYSize();
-   double min = poBand->GetMinimum();
-   double max = poBand->GetMaximum();
-
-   bitmap->sGeoRef.topLeftX = adfGeoTransform[0];
-   bitmap->sGeoRef.topLeftY = adfGeoTransform[3];
-   bitmap->sGeoRef.pixelResolX = adfGeoTransform[1];
-   bitmap->sGeoRef.pixelResolY = adfGeoTransform[5];
-   bitmap->sGeoRef.nXSize = nXSize;
-   bitmap->sGeoRef.nYSize = nYSize;
-   bitmap->sGeoRef.minimum = min;
-   bitmap->sGeoRef.maximum = max;
-   bitmap->sGeoRef.defined = true;
-
-   //bitmap->
-   float *pafScanline = static_cast<float *>(CPLMalloc(sizeof(float) * nXSize));
-
-   for (int i = 0; i<nYSize; i++)
+   if (nRasterCount == 1)
    {
-      poBand->RasterIO(GF_Read, 0, i, nXSize, 1,
-         pafScanline, nXSize, 1, GDT_Float32,
-         0, 0);
+      if (gddt == GDT_Byte)
+      {
+         if (ct == NULL)
+         {
+            format = GFXFormatA8;
+            bytes_detph = 1;
+         }
+         else
+         {
+            format = GFXFormatR8G8B8;
+            bytes_detph = 3;
+         }         
+      }
+      else if (gddt == GDT_UInt16 || gddt == GDT_Int16)
+      {
+         format = GFXFormatR5G6B5;
+         bytes_detph = 2;
+      }
+      else if (gddt == GDT_Float32)
+      {
+         format = GFXFormatR32F;
+         bytes_detph = 4;
+      }
+   }
+   else if (nRasterCount == 3)
+   {
+      if(gddt == GDT_Byte)
+      {
+         format = GFXFormatR8G8B8;
+         bytes_detph = 1;
+      }
+   }
+   else if (nRasterCount == 4)
+   {
+      if (gddt == GDT_Byte)
+      {
+         format = GFXFormatR8G8B8A8;
+         bytes_detph = 1;
+      }
+      else if(gddt == GDT_UInt16)
+      {
+         format = GFXFormatR16G16B16A16;
+         bytes_detph = 2;
+      }
+   }
+   else
+   {
+      Con::errorf("Error: Formato no soportado.");
+   }
 
-      U8 *rowDest = bitmap->getAddress(0, i);
+
+      int   nXSize = poBand->GetXSize();
+      int   nYSize = poBand->GetYSize();
+      double min = poBand->GetMinimum();
+      double max = poBand->GetMaximum();
+
+#pragma region GeoRef
+      bitmap->sGeoRef.topLeftX = adfGeoTransform[0];
+      bitmap->sGeoRef.topLeftY = adfGeoTransform[3];
+      bitmap->sGeoRef.pixelResolX = adfGeoTransform[1];
+      bitmap->sGeoRef.pixelResolY = adfGeoTransform[5];
+      bitmap->sGeoRef.nXSize = nXSize;
+      bitmap->sGeoRef.nYSize = nYSize;
+      bitmap->sGeoRef.minimum = min;
+      bitmap->sGeoRef.maximum = max;
+      bitmap->sGeoRef.defined = true;
+#pragma endregion GeoRef
+
+#pragma region cambio de tamaño
+      if (width != height || !isPow2(width))
+      {
+         printf("Height map must be square and power of two in size!");
+         //return false;
+
+         S32 maxdim = getMax(width, height);
+         if (!isPow2(maxdim))
+         {
+            //Rounding up to next power of 2
+            int power = 1;
+            while (power < maxdim)
+               power *= 2;
+
+            maxdim = power;
+         }
+
+         width = maxdim;
+         height = maxdim;
+      }
+#pragma endregion cambio de tamaño
+
+   // allocate the bitmap space and init internal variables...
+
+   bitmap->allocateBitmap(width, height, false, format); //32 bit float
+   U8 *pafScanline = static_cast<U8*>(CPLMalloc(bytes_detph * nXSize));
+
+   for (S32 irast = 1; irast <= nRasterCount; irast++)
+   {
+      GDALRasterBand *poBand = preadDS->GetRasterBand(irast);
       
-      for (S32 j = 0; j < nXSize; j++)
-      {                  
-         F32 * pixelLocation = reinterpret_cast<F32 *>(&rowDest[j * 4]);
-         pixelLocation[0] = pafScanline[j] - min;
-      }  
+      S32 nChannel = irast - 1;
+      
+      GDALDataType gddt = poBand->GetRasterDataType();
+      GDALColorInterp gdci = poBand->GetColorInterpretation();
+
+      
+#pragma region Vervose
+      poBand->GetBlockSize(&nBlockXSize, &nBlockYSize);
+      Con::printf("Block=%dx%d Type=%s, ColorInterp=%s\n",
+         nBlockXSize, nBlockYSize,
+         GDALGetDataTypeName(poBand->GetRasterDataType()),
+         GDALGetColorInterpretationName(
+            poBand->GetColorInterpretation()));
+      adfMinMax[0] = poBand->GetMinimum(&bGotMin);
+      adfMinMax[1] = poBand->GetMaximum(&bGotMax);
+      if (!(bGotMin && bGotMax))
+         GDALComputeRasterMinMax((GDALRasterBandH)poBand, TRUE, adfMinMax);
+      Con::printf("Min=%.3fd, Max=%.3f\n", adfMinMax[0], adfMinMax[1]);
+      if (poBand->GetOverviewCount() > 0)
+         Con::printf("Band has %d overviews.\n", poBand->GetOverviewCount());
+
+#pragma endregion Vervose
+
+      for (int i = 0; i < nYSize; i++)
+      {
+         poBand->RasterIO(GF_Read, 0, i, nXSize, 1,
+            pafScanline, nXSize, 1, gddt,
+            0, 0);
+
+//          for (S32 j = 0; j < nXSize; j++)
+//          {
+//             F32 val = pafScanline[j];
+//             Con::printf("%f", val);
+//          }
+
+         U8 *rowDest = bitmap->getAddress(0, i);
+
+         switch (gddt)
+         {
+         case GDT_Byte:
+         {
+            GDALColorEntry ce;
+            for (S32 j = 0; j < nXSize; j++)
+            {
+               U8 * pixelLocation = reinterpret_cast<U8 *>(&rowDest[(j + nChannel) * bytes_detph]);
+               if (ct == NULL)
+                  pixelLocation[0] = (U8)pafScanline[j];
+               else
+               {
+
+                  ct->GetColorEntryAsRGB(pafScanline[j], &ce);
+                  pixelLocation[0] = ce.c1;
+                  pixelLocation[1] = ce.c2;
+                  pixelLocation[2] = ce.c3;
+               }
+            }
+         }
+            break;
+         case GDT_UInt16:
+            for (S32 j = 0; j < nXSize; j++)
+            {
+               U16 * pixelLocation = reinterpret_cast<U16 *>(&rowDest[(j + nChannel) * bytes_detph]);
+               pixelLocation[0] = (U16)pafScanline[j];
+            }
+            break;
+         case GDT_Int16: break;
+         case GDT_UInt32: break;
+         case GDT_Int32: break;
+         case GDT_Float32:
+            for (S32 j = 0; j < nXSize; j++)
+            {
+               F32 * pixelLocation = reinterpret_cast<F32 *>(&rowDest[(j + nChannel) * bytes_detph]);
+               pixelLocation[0] = (F32)pafScanline[j];
+            }
+            break;
+
+         default: 
+            Con::errorf("Tipo de datos no usado.");
+            ;
+         }
+
+      }
+
    }
 
    CPLFree(pafScanline);
 
    GDALClose(preadDS);
 
-
-   GFXFormat format;
+//    // We gotta attach the extension ourselves.
+//    char filename[256];
+//    dSprintf(filename, 256, "%s.%s", "imgdebug", "png");
+// 
+//    // Open up the file on disk.
+//    FileStream fs;
+//    if (!fs.open(filename, Torque::FS::File::Write))
+//       printf("ScreenShot::_singleCapture() - Failed to open output file '%s'!", filename);
+//    else
+//    {
+//       bitmap->writeBitmap("png", fs);
+//       fs.close();
+//    }
 
 //    switch (cinfo.out_color_space)
 //    {
