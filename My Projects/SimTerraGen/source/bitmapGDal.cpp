@@ -184,6 +184,8 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
       Con::printf("PaletteInterpretation returning: %d", ct->GetPaletteInterpretation());
    }
 
+   bool convertToPng = true;
+
    if (nRasterCount == 1)
    {
       if (gddt == GDT_Byte)
@@ -192,26 +194,32 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
          {
             format = GFXFormatA8;
             bytes_detph = 1;
+
+            convertToPng = false;
          }
          else
          {
             format = GFXFormatR8G8B8;
             bytes_detph = 3;
+            convertToPng = true;
          }         
       }
       else if (gddt == GDT_UInt16 || gddt == GDT_Int16)
       {
          format = GFXFormatR5G6B5;
          bytes_detph = 2;
+         convertToPng = false;
       }
-      else if (gddt == GDT_Float32)
+      else
       {
          format = GFXFormatR32F;
          bytes_detph = 4;
+         convertToPng = false;
       }
    }
    else if (nRasterCount == 3)
    {
+      convertToPng = true;
       if(gddt == GDT_Byte)
       {
          format = GFXFormatR8G8B8;
@@ -220,6 +228,7 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
    }
    else if (nRasterCount == 4)
    {
+      convertToPng = true;
       if (gddt == GDT_Byte)
       {
          format = GFXFormatR8G8B8A8;
@@ -233,6 +242,7 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
    }
    else
    {
+      convertToPng = true;
       Con::errorf("Error: Formato no soportado.");
    }
 
@@ -277,6 +287,46 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
 #pragma endregion cambio de tamaño
 
    // allocate the bitmap space and init internal variables...
+
+   if(convertToPng)
+   {      
+      GDALDriver *poDriver;
+      char **papszMetadata;
+      poDriver = GetGDALDriverManager()->GetDriverByName("PNG");
+      if (poDriver == NULL)
+         return false;
+     
+      GDALDataset* poDstDS = poDriver->CreateCopy("./dummy.png", preadDS, FALSE,
+         NULL, NULL, NULL);
+      /* Once we're done, close properly the dataset */
+      if (poDstDS != NULL)
+         GDALClose((GDALDatasetH)poDstDS);
+      GDALClose((GDALDatasetH)preadDS);
+
+      FileStream  streamPng;
+
+      streamPng.open("./dummy.png", Torque::FS::File::Read);
+
+      if (streamPng.getStatus() != Stream::Ok)
+      {
+         Con::errorf("Resource<GBitmap>::create - failed to open '%s'", "./dummy.png");
+         return NULL;
+      }
+
+//       GBitmap *bmp = new GBitmap;
+
+      if (!bitmap->readBitmap("png", streamPng))
+      {
+         //Con::errorf("Resource<GBitmap>::create - error reading '%s'", path.getFullPath().c_str());
+         //delete bmp;
+         return false;
+         bitmap = NULL;
+      }
+
+      bitmap->setHasTransparency(false);
+      return true;
+   }
+
 
    bitmap->allocateBitmap(width, height, false, format); //32 bit float
    U8 *pafScanline = static_cast<U8*>(CPLMalloc(bytes_detph * nXSize));
