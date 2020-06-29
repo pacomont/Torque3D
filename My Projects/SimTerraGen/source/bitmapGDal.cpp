@@ -97,13 +97,128 @@ static S32 gdalErrorFn(void *client_data)
    AssertFatal(stream != NULL, "gdalErrorFn::No stream.");
    return (stream->getStatus() != Stream::Ok);
 }
+/*
+static void crop(const char *inputPath, const char *cropPath, double topLeftX, double topLeftY,
+   double width, double height)
+{
+   GDALDataset *pInputRaster, *pCroppedRaster;
+   GDALDriver *pDriver;
 
+   pDriver = GetGDALDriverManager->getDriverByName("PNG");
+
+   pInputRaster = (GDALDataset*)GDALOpen(inputPath, GA_ReadOnly);
+
+   //the affine transformation information, you will need to adjust this to properly
+   //display the clipped raster
+   double transform[6];
+   pInputRaster->getGeoTransform(transform);
+
+   //adjust top left coordinates
+   transform[0] = topLeftX;
+   transform[3] = topLeftY;
+
+   //determine dimensions of the new (cropped) raster in cells
+   int xSize = round(width / transform[1]);
+   int ySize = round(height / transform[1]);
+
+   //create the new (cropped) dataset
+   pCroppedRaster = pDriver->Create(cropPath, xSize, ySize, 1, GDT_Float32, NULL) //or something similar
+
+                                                                                  //now all you have to do is find the number of columns and rows the top left corner
+                                                                                  //of the cropped raster if offset from the original raster, and use those values to 
+                                                                                  //read data from the original raster and copy/write the data to the new (cropped) raster
+}
+*/
 
 //--------------------------------------
 static bool sReadGDal(Stream &stream, GBitmap *bitmap)
 {
    GDALDriver *pDriverTiff;
    double transform[6];
+
+   GDALAllRegister();
+   
+   const Torque::FS::FileRef fref = static_cast<FileStream*>(&stream)->getFileRef();
+   Torque::Path path = fref->getName();
+
+   // Write out the actual Collada file
+   char inFileName[4096];
+   String file = path.getFullFileName();
+   file = path.getRootAndPath();
+   file = path.getPath();   
+   file = path.getRoot();
+   file = path.getFullPathWithoutRoot();
+
+   //file = Torque::Path::Join(path.getPath(), '/', path.getFullFileName());
+
+   //String osFile = Torque::PathToOS(file);
+
+   Platform::makeFullPathName(file, inFileName, 4096);
+
+   GDALDataset *preadDS = (GDALDataset *)GDALOpen(inFileName, GA_ReadOnly);
+   if (preadDS == NULL)
+      return false;
+
+//    GDALDriver *poDriver;
+//    char **papszMetadata;
+//    poDriver = GetGDALDriverManager()->GetDriverByName("MEM");
+//    if (poDriver == NULL)
+//       return false;
+//    char **cropOptions = NULL;
+// 
+//    GDALDataset* poDstDS = poDriver->Create("./dummy.dat", bitmap->getWidth(), bitmap->getHeight(), 1, GDT_Byte, cropOptions);
+// 
+//    GDALRasterBand* band_out = poDstDS->GetRasterBand(1);
+//    U8 *bitmapbuff = bitmap->getAddress(0, 0);
+//    band_out->RasterIO(GF_Write, 0, 0, bitmap->getWidth(), bitmap->getHeight(), bitmapbuff, bitmap->getWidth(), bitmap->getHeight(), GDT_Byte, 0, 0);
+// 
+
+
+   GDALDriver *poDriver;
+   //char **papszMetadata;
+   poDriver = GetGDALDriverManager()->GetDriverByName("PNG");
+   if (poDriver == NULL)
+      return false;
+
+   GDALDataset* pngDS = poDriver->CreateCopy("./dummy.png", preadDS, FALSE,
+      NULL, NULL, NULL);
+   /* Once we're done, close properly the dataset */
+   /* Once we're done, close properly the dataset */
+   if (preadDS != NULL)
+      GDALClose((GDALDatasetH)preadDS);
+
+   
+   FileStream  streamPng;
+
+   streamPng.open("./dummy.png", Torque::FS::File::Read);
+
+   if (streamPng.getStatus() != Stream::Ok)
+   {
+      Con::errorf("Resource<GBitmap>::create - failed to open '%s'", "./dummy.png");
+      return NULL;
+   }
+
+   if (pngDS != NULL)
+      GDALClose((GDALDatasetH)pngDS);
+
+
+   //       GBitmap *bmp = new GBitmap;
+
+   if (!bitmap->readBitmap("png", streamPng))
+   {
+      //Con::errorf("Resource<GBitmap>::create - error reading '%s'", path.getFullPath().c_str());
+      //delete bmp;
+      return false;
+      bitmap = NULL;
+   }
+
+   bitmap->setHasTransparency(false);
+   return true;
+
+
+
+   /*
+
 
    FileStream  *newStream = new FileStream;
 
@@ -128,7 +243,32 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
       return false;
    }
 
-   
+#pragma region cambio de tamaño
+   S32 width = preadDS->GetRasterXSize();
+   S32 height = preadDS->GetRasterYSize();
+
+   if (width != height || !isPow2(width))
+   {
+      printf("Height map must be square and power of two in size!");
+      //return false;
+
+      S32 maxdim = getMax(width, height);
+      if (!isPow2(maxdim))
+      {
+         //Rounding up to next power of 2
+         int power = 1;
+         while (power < maxdim)
+            power *= 2;
+
+         maxdim = power;
+      }
+
+      width = maxdim;
+      height = maxdim;
+   }
+
+
+#pragma endregion cambio de tamaño
 
 
    double        adfGeoTransform[6];
@@ -149,16 +289,6 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
    }
 
 
-   //adfGeoTransform[0] /* top left x */
-   //adfGeoTransform[1] /* w-e pixel resolution */
-   //adfGeoTransform[2] /* 0 */
-   //adfGeoTransform[3] /* top left y */
-   //adfGeoTransform[4] /* 0 */
-   //adfGeoTransform[5] /* n-s pixel resolution (negative value) */
-
-   S32 width = preadDS->GetRasterXSize();
-   S32 height = preadDS->GetRasterYSize();
-
    int             nBlockXSize, nBlockYSize;
    int             bGotMin, bGotMax;
    double          adfMinMax[2];
@@ -174,77 +304,6 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
    S32 bytes_detph = 1;  
    GDALColorTable* ct = NULL;
    
-
-   if (poBand->GetColorTable() != NULL)
-   {
-      Con::printf("Band has a color table with %d entries.\n",
-         poBand->GetColorTable()->GetColorEntryCount());
-      ct = poBand->GetColorTable();
-
-      Con::printf("PaletteInterpretation returning: %d", ct->GetPaletteInterpretation());
-   }
-
-   bool convertToPng = true;
-
-   if (nRasterCount == 1)
-   {
-      if (gddt == GDT_Byte)
-      {
-         if (ct == NULL)
-         {
-            format = GFXFormatA8;
-            bytes_detph = 1;
-
-            convertToPng = false;
-         }
-         else
-         {
-            format = GFXFormatR8G8B8;
-            bytes_detph = 3;
-            convertToPng = true;
-         }         
-      }
-      else if (gddt == GDT_UInt16 || gddt == GDT_Int16)
-      {
-         format = GFXFormatR5G6B5;
-         bytes_detph = 2;
-         convertToPng = false;
-      }
-      else
-      {
-         format = GFXFormatR32F;
-         bytes_detph = 4;
-         convertToPng = false;
-      }
-   }
-   else if (nRasterCount == 3)
-   {
-      convertToPng = true;
-      if(gddt == GDT_Byte)
-      {
-         format = GFXFormatR8G8B8;
-         bytes_detph = 1;
-      }
-   }
-   else if (nRasterCount == 4)
-   {
-      convertToPng = true;
-      if (gddt == GDT_Byte)
-      {
-         format = GFXFormatR8G8B8A8;
-         bytes_detph = 1;
-      }
-      else if(gddt == GDT_UInt16)
-      {
-         format = GFXFormatR16G16B16A16;
-         bytes_detph = 2;
-      }
-   }
-   else
-   {
-      convertToPng = true;
-      Con::errorf("Error: Formato no soportado.");
-   }
 
 
       int   nXSize = poBand->GetXSize();
@@ -264,28 +323,6 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
       bitmap->sGeoRef.defined = true;
 #pragma endregion GeoRef
 
-#pragma region cambio de tamaño
-      if (width != height || !isPow2(width))
-      {
-         printf("Height map must be square and power of two in size!");
-         //return false;
-
-         S32 maxdim = getMax(width, height);
-         if (!isPow2(maxdim))
-         {
-            //Rounding up to next power of 2
-            int power = 1;
-            while (power < maxdim)
-               power *= 2;
-
-            maxdim = power;
-         }
-
-         width = maxdim;
-         height = maxdim;
-      }
-#pragma endregion cambio de tamaño
-
    // allocate the bitmap space and init internal variables...
 
    if(convertToPng)
@@ -298,7 +335,7 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
      
       GDALDataset* poDstDS = poDriver->CreateCopy("./dummy.png", preadDS, FALSE,
          NULL, NULL, NULL);
-      /* Once we're done, close properly the dataset */
+      // Once we're done, close properly the dataset
       if (poDstDS != NULL)
          GDALClose((GDALDatasetH)poDstDS);
       GDALClose((GDALDatasetH)preadDS);
@@ -451,7 +488,7 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
 
    // We know JPEG's don't have any transparency
    bitmap->setHasTransparency(false);
-   
+   */
    return true;
 }
 
