@@ -97,38 +97,65 @@ static S32 gdalErrorFn(void *client_data)
    AssertFatal(stream != NULL, "gdalErrorFn::No stream.");
    return (stream->getStatus() != Stream::Ok);
 }
-/*
-static void crop(const char *inputPath, const char *cropPath, double topLeftX, double topLeftY,
-   double width, double height)
+
+
+static GDALDataset* crop(GDALDataset* outDS, GDALDataset* inDS, int xoff, int yoff, int xsize, int ysize)
 {
-   GDALDataset *pInputRaster, *pCroppedRaster;
-   GDALDriver *pDriver;
+   const int readRows = 512;
+   const int readCols = 512;
+   int nBlockXSize;
+   int nBlockYSize;
+   int rowOff = 0;
+   int colOff = 0;
+   int nRows = 0;
+   int nCols = 0;
+   double noData = -9999;
 
-   pDriver = GetGDALDriverManager->getDriverByName("PNG");
+   // Here I also copy metadata from my own domain
+   GDALRasterBand* poSrcBand1 = inDS->GetRasterBand(1);
+   GDALDataType eBandType1 = poSrcBand1->GetRasterDataType();
+   const U8 DataTypesize[] = {1,1,2,2,4,4,4,8,2,4,8};
+   S32 nBytesPerBand = DataTypesize[eBandType1];
 
-   pInputRaster = (GDALDataset*)GDALOpen(inputPath, GA_ReadOnly);
+   U8 *abyRaster = (U8 *)CPLMalloc(readRows*readCols*nBytesPerBand);
 
-   //the affine transformation information, you will need to adjust this to properly
-   //display the clipped raster
-   double transform[6];
-   pInputRaster->getGeoTransform(transform);
 
-   //adjust top left coordinates
-   transform[0] = topLeftX;
-   transform[3] = topLeftY;
+   for (int iband = 0; iband < inDS->GetRasterCount(); ++iband)
+   {
+      GDALRasterBand* poSrcBand = inDS->GetRasterBand(iband + 1);
+      GDALDataType eBandType = poSrcBand->GetRasterDataType();
 
-   //determine dimensions of the new (cropped) raster in cells
-   int xSize = round(width / transform[1]);
-   int ySize = round(height / transform[1]);
+      nCols = poSrcBand->GetXSize();
+      nRows = poSrcBand->GetYSize();
+      noData = poSrcBand->GetNoDataValue();
 
-   //create the new (cropped) dataset
-   pCroppedRaster = pDriver->Create(cropPath, xSize, ySize, 1, GDT_Float32, NULL) //or something similar
+      int nXBlocks = (poSrcBand->GetXSize() + readCols - 1) / readCols;
+      int nYBlocks = (poSrcBand->GetYSize() + readRows - 1) / readRows;
 
-                                                                                  //now all you have to do is find the number of columns and rows the top left corner
-                                                                                  //of the cropped raster if offset from the original raster, and use those values to 
-                                                                                  //read data from the original raster and copy/write the data to the new (cropped) raster
+      for (int i = 0; i < nYBlocks; i++)
+      {
+         for (int j = 0; j < nXBlocks; j++)
+         {
+            int nXSize = getMin(readCols, poSrcBand->GetXSize() - j * readCols);
+            int nYSize = getMin(readRows, poSrcBand->GetYSize() - i * readRows);
+
+
+            poSrcBand->RasterIO(GF_Read, j * readCols, i * readRows, readCols, readRows,
+               abyRaster, nXSize, nYSize, eBandType, 0, 0);
+
+            GDALRasterBand* poVRTBand = outDS->GetRasterBand(iband + 1);
+            poVRTBand->RasterIO(GF_Write, j * readCols, i * readRows, readCols, readRows,
+               abyRaster, nXSize, nYSize, eBandType, 0, 0);
+         }
+      }
+   }
+
+   CPLFree(abyRaster);
+
+   return outDS;
 }
-*/
+
+
 
 //--------------------------------------
 static bool sReadGDal(Stream &stream, GBitmap *bitmap)
@@ -143,21 +170,60 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
 
    // Write out the actual Collada file
    char inFileName[4096];
-   String file = path.getFullFileName();
-   file = path.getRootAndPath();
-   file = path.getPath();   
-   file = path.getRoot();
-   file = path.getFullPathWithoutRoot();
-
-   //file = Torque::Path::Join(path.getPath(), '/', path.getFullFileName());
-
-   //String osFile = Torque::PathToOS(file);
+   String file = path.getFullPathWithoutRoot();
 
    Platform::makeFullPathName(file, inFileName, 4096);
 
    GDALDataset *preadDS = (GDALDataset *)GDALOpen(inFileName, GA_ReadOnly);
    if (preadDS == NULL)
       return false;
+
+   #pragma region GeoRef
+
+   int             nBlockXSize, nBlockYSize;
+   int             bGotMin, bGotMax;
+   double          adfMinMax[2];
+
+   GDALDataset::Bands bands = preadDS->GetBands();
+   S32 nRasterCount = preadDS->GetRasterCount();
+
+   GDALRasterBand *poBand = preadDS->GetRasterBand(1);
+   GDALDataType gddt = poBand->GetRasterDataType();
+   GDALColorInterp gdci = poBand->GetColorInterpretation();
+
+   int   nXSize = poBand->GetXSize();
+   int   nYSize = poBand->GetYSize();
+   double min = poBand->GetMinimum();
+   double max = poBand->GetMaximum();
+
+   double        adfGeoTransform[6];
+   Con::printf("Driver: %s/%s\n",
+      preadDS->GetDriver()->GetDescription(),
+      preadDS->GetDriver()->GetMetadataItem(GDAL_DMD_LONGNAME));
+   Con::printf("Size is %dx%dx%d\n",
+      preadDS->GetRasterXSize(), preadDS->GetRasterYSize(),
+      preadDS->GetRasterCount());
+   if (preadDS->GetProjectionRef() != NULL)
+      Con::printf("Projection is `%s'\n", preadDS->GetProjectionRef());
+   if (preadDS->GetGeoTransform(adfGeoTransform) == CE_None)
+   {
+      Con::printf("Origin = (%.6f,%.6f)\n",
+         adfGeoTransform[0], adfGeoTransform[3]);
+      Con::printf("Pixel Size = (%.6f,%.6f)\n",
+         adfGeoTransform[1], adfGeoTransform[5]);
+   }
+
+
+   bitmap->sGeoRef.topLeftX = adfGeoTransform[0];
+   bitmap->sGeoRef.topLeftY = adfGeoTransform[3];
+   bitmap->sGeoRef.pixelResolX = adfGeoTransform[1];
+   bitmap->sGeoRef.pixelResolY = adfGeoTransform[5];
+   bitmap->sGeoRef.nXSize = nXSize;
+   bitmap->sGeoRef.nYSize = nYSize;
+   bitmap->sGeoRef.minimum = min;
+   bitmap->sGeoRef.maximum = max;
+   bitmap->sGeoRef.defined = true;
+#pragma endregion GeoRef
 
 //    GDALDriver *poDriver;
 //    char **papszMetadata;
@@ -172,76 +238,6 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
 //    U8 *bitmapbuff = bitmap->getAddress(0, 0);
 //    band_out->RasterIO(GF_Write, 0, 0, bitmap->getWidth(), bitmap->getHeight(), bitmapbuff, bitmap->getWidth(), bitmap->getHeight(), GDT_Byte, 0, 0);
 // 
-
-
-   GDALDriver *poDriver;
-   //char **papszMetadata;
-   poDriver = GetGDALDriverManager()->GetDriverByName("PNG");
-   if (poDriver == NULL)
-      return false;
-
-   GDALDataset* pngDS = poDriver->CreateCopy("./dummy.png", preadDS, FALSE,
-      NULL, NULL, NULL);
-   /* Once we're done, close properly the dataset */
-   /* Once we're done, close properly the dataset */
-   if (preadDS != NULL)
-      GDALClose((GDALDatasetH)preadDS);
-
-   
-   FileStream  streamPng;
-
-   streamPng.open("./dummy.png", Torque::FS::File::Read);
-
-   if (streamPng.getStatus() != Stream::Ok)
-   {
-      Con::errorf("Resource<GBitmap>::create - failed to open '%s'", "./dummy.png");
-      return NULL;
-   }
-
-   if (pngDS != NULL)
-      GDALClose((GDALDatasetH)pngDS);
-
-
-   //       GBitmap *bmp = new GBitmap;
-
-   if (!bitmap->readBitmap("png", streamPng))
-   {
-      //Con::errorf("Resource<GBitmap>::create - error reading '%s'", path.getFullPath().c_str());
-      //delete bmp;
-      return false;
-      bitmap = NULL;
-   }
-
-   bitmap->setHasTransparency(false);
-   return true;
-
-
-
-   /*
-
-
-   FileStream  *newStream = new FileStream;
-
-   const char *inFileName = "./dummy.dat";
-
-   bool success = newStream->open(inFileName, Torque::FS::File::Write);
-
-   if (!success)
-   {
-      delete newStream;
-      return false;
-   }
-
-   newStream->copyFrom(&stream);   
-
-   newStream->close();
-   delete newStream;
-
-   GDALDataset *preadDS = (GDALDataset *) GDALOpen(inFileName, GA_ReadOnly);
-   if (preadDS == NULL)
-   {
-      return false;
-   }
 
 #pragma region cambio de tamaño
    S32 width = preadDS->GetRasterXSize();
@@ -267,222 +263,59 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
       height = maxdim;
    }
 
-
 #pragma endregion cambio de tamaño
 
+   GDALDriver *poDriver;
+   //char **papszMetadata;
+   poDriver = GetGDALDriverManager()->GetDriverByName("BMP");
+   if (poDriver == NULL)
+      return false;
 
-   double        adfGeoTransform[6];
-   Con::printf("Driver: %s/%s\n",
-      preadDS->GetDriver()->GetDescription(),
-      preadDS->GetDriver()->GetMetadataItem(GDAL_DMD_LONGNAME));
-   Con::printf("Size is %dx%dx%d\n",
-      preadDS->GetRasterXSize(), preadDS->GetRasterYSize(),
-      preadDS->GetRasterCount());
-   if (preadDS->GetProjectionRef() != NULL)
-      Con::printf("Projection is `%s'\n", preadDS->GetProjectionRef());
-   if (preadDS->GetGeoTransform(adfGeoTransform) == CE_None)
-   {
-      Con::printf("Origin = (%.6f,%.6f)\n",
-         adfGeoTransform[0], adfGeoTransform[3]);
-      Con::printf("Pixel Size = (%.6f,%.6f)\n",
-         adfGeoTransform[1], adfGeoTransform[5]);
-   }
+   //create the new (cropped) dataset
+   //pCroppedRaster = pDriver->Create(cropPath, xSize, ySize, 1, GDT_Float32, NULL) //or something similar
+   GDALDataset* pngDS = poDriver->Create("./dummy.bmp", width, height, nRasterCount, gddt, NULL);
 
+   crop(pngDS, preadDS, 0, 0, 0, 0);
 
-   int             nBlockXSize, nBlockYSize;
-   int             bGotMin, bGotMax;
-   double          adfMinMax[2];
-
-   GDALDataset::Bands bands = preadDS->GetBands();
-   S32 nRasterCount = preadDS->GetRasterCount();
-
-   GDALRasterBand *poBand = preadDS->GetRasterBand(1);
-   GDALDataType gddt = poBand->GetRasterDataType();
-   GDALColorInterp gdci = poBand->GetColorInterpretation();
-
-   GFXFormat format = GFXFormatR8G8B8;
-   S32 bytes_detph = 1;  
-   GDALColorTable* ct = NULL;
-   
-
-
-      int   nXSize = poBand->GetXSize();
-      int   nYSize = poBand->GetYSize();
-      double min = poBand->GetMinimum();
-      double max = poBand->GetMaximum();
-
-#pragma region GeoRef
-      bitmap->sGeoRef.topLeftX = adfGeoTransform[0];
-      bitmap->sGeoRef.topLeftY = adfGeoTransform[3];
-      bitmap->sGeoRef.pixelResolX = adfGeoTransform[1];
-      bitmap->sGeoRef.pixelResolY = adfGeoTransform[5];
-      bitmap->sGeoRef.nXSize = nXSize;
-      bitmap->sGeoRef.nYSize = nYSize;
-      bitmap->sGeoRef.minimum = min;
-      bitmap->sGeoRef.maximum = max;
-      bitmap->sGeoRef.defined = true;
-#pragma endregion GeoRef
-
-   // allocate the bitmap space and init internal variables...
-
-   if(convertToPng)
-   {      
-      GDALDriver *poDriver;
-      char **papszMetadata;
-      poDriver = GetGDALDriverManager()->GetDriverByName("PNG");
-      if (poDriver == NULL)
-         return false;
-     
-      GDALDataset* poDstDS = poDriver->CreateCopy("./dummy.png", preadDS, FALSE,
-         NULL, NULL, NULL);
-      // Once we're done, close properly the dataset
-      if (poDstDS != NULL)
-         GDALClose((GDALDatasetH)poDstDS);
+   //GDALDataset* pngDS = poDriver->CreateCopy("./dummy.png", preadDS, FALSE,
+   //   NULL, NULL, NULL);
+   /* Once we're done, close properly the dataset */
+   /* Once we're done, close properly the dataset */
+   if (preadDS != NULL)
       GDALClose((GDALDatasetH)preadDS);
 
-      FileStream  streamPng;
+   if (pngDS != NULL)
+      GDALClose((GDALDatasetH)pngDS);
 
-      streamPng.open("./dummy.png", Torque::FS::File::Read);
+   
+   FileStream  streamPng;
 
-      if (streamPng.getStatus() != Stream::Ok)
-      {
-         Con::errorf("Resource<GBitmap>::create - failed to open '%s'", "./dummy.png");
-         return NULL;
-      }
+   streamPng.open("./dummy.bmp", Torque::FS::File::Read);
 
-//       GBitmap *bmp = new GBitmap;
-
-      if (!bitmap->readBitmap("png", streamPng))
-      {
-         //Con::errorf("Resource<GBitmap>::create - error reading '%s'", path.getFullPath().c_str());
-         //delete bmp;
-         return false;
-         bitmap = NULL;
-      }
-
-      bitmap->setHasTransparency(false);
-      return true;
-   }
-
-
-   bitmap->allocateBitmap(width, height, false, format); //32 bit float
-   U8 *pafScanline = static_cast<U8*>(CPLMalloc(bytes_detph * nXSize));
-
-   for (S32 irast = 1; irast <= nRasterCount; irast++)
+   if (streamPng.getStatus() != Stream::Ok)
    {
-      GDALRasterBand *poBand = preadDS->GetRasterBand(irast);
-      
-      S32 nChannel = irast - 1;
-      
-      GDALDataType gddt = poBand->GetRasterDataType();
-      GDALColorInterp gdci = poBand->GetColorInterpretation();
-
-      
-#pragma region Vervose
-      poBand->GetBlockSize(&nBlockXSize, &nBlockYSize);
-      Con::printf("Block=%dx%d Type=%s, ColorInterp=%s\n",
-         nBlockXSize, nBlockYSize,
-         GDALGetDataTypeName(poBand->GetRasterDataType()),
-         GDALGetColorInterpretationName(
-            poBand->GetColorInterpretation()));
-      adfMinMax[0] = poBand->GetMinimum(&bGotMin);
-      adfMinMax[1] = poBand->GetMaximum(&bGotMax);
-      if (!(bGotMin && bGotMax))
-         GDALComputeRasterMinMax((GDALRasterBandH)poBand, TRUE, adfMinMax);
-      Con::printf("Min=%.3fd, Max=%.3f\n", adfMinMax[0], adfMinMax[1]);
-      if (poBand->GetOverviewCount() > 0)
-         Con::printf("Band has %d overviews.\n", poBand->GetOverviewCount());
-
-#pragma endregion Vervose
-
-      for (int i = 0; i < nYSize; i++)
-      {
-         poBand->RasterIO(GF_Read, 0, i, nXSize, 1,
-            pafScanline, nXSize, 1, gddt,
-            0, 0);
-
-//          for (S32 j = 0; j < nXSize; j++)
-//          {
-//             F32 val = pafScanline[j];
-//             Con::printf("%f", val);
-//          }
-
-         U8 *rowDest = bitmap->getAddress(0, i);
-
-         switch (gddt)
-         {
-         case GDT_Byte:
-         {
-            GDALColorEntry ce;
-            for (S32 j = 0; j < nXSize; j++)
-            {
-               U8 * pixelLocation = reinterpret_cast<U8 *>(&rowDest[(j + nChannel) * bytes_detph]);
-               if (ct == NULL)
-                  pixelLocation[0] = (U8)pafScanline[j];
-               else
-               {
-
-                  ct->GetColorEntryAsRGB(pafScanline[j], &ce);
-                  pixelLocation[0] = ce.c1;
-                  pixelLocation[1] = ce.c2;
-                  pixelLocation[2] = ce.c3;
-               }
-            }
-         }
-            break;
-         case GDT_UInt16:
-            for (S32 j = 0; j < nXSize; j++)
-            {
-               U16 * pixelLocation = reinterpret_cast<U16 *>(&rowDest[(j + nChannel) * bytes_detph]);
-               pixelLocation[0] = (U16)pafScanline[j];
-            }
-            break;
-         case GDT_Int16: break;
-         case GDT_UInt32: break;
-         case GDT_Int32: break;
-         case GDT_Float32:
-            for (S32 j = 0; j < nXSize; j++)
-            {
-               F32 * pixelLocation = reinterpret_cast<F32 *>(&rowDest[(j + nChannel) * bytes_detph]);
-               pixelLocation[0] = (F32)pafScanline[j];
-            }
-            break;
-
-         default: 
-            Con::errorf("Tipo de datos no usado.");
-            ;
-         }
-
-      }
-
+      Con::errorf("Resource<GBitmap>::create - failed to open '%s'", "./dummy.png");
+      return NULL;
    }
 
-   CPLFree(pafScanline);
+   //       GBitmap *bmp = new GBitmap;
 
-   GDALClose(preadDS);
+   if (!bitmap->readBitmap("bmp", streamPng))
+   {
+      //Con::errorf("Resource<GBitmap>::create - error reading '%s'", path.getFullPath().c_str());
+      //delete bitmap;
+      return false;
+   }
 
-//    // We gotta attach the extension ourselves.
-//    char filename[256];
-//    dSprintf(filename, 256, "%s.%s", "imgdebug", "png");
-// 
-//    // Open up the file on disk.
-//    FileStream fs;
-//    if (!fs.open(filename, Torque::FS::File::Write))
-//       printf("ScreenShot::_singleCapture() - Failed to open output file '%s'!", filename);
-//    else
-//    {
-//       bitmap->writeBitmap("png", fs);
-//       fs.close();
-//    }
 
-//    switch (cinfo.out_color_space)
-//    {
-//       case JCS_GRAYSCALE:  format = GFXFormatA8; break;
-//       case JCS_RGB:        format = GFXFormatR8G8B8;   break;
-//       default:
-//          gdal_destroy_decompress(&cinfo);
-//          return false;
-//    }
+
+
+   /*
+
+
+
+
+
 
 
 
@@ -490,6 +323,7 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
    bitmap->setHasTransparency(false);
    */
    return true;
+
 }
 
 
