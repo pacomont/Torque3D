@@ -149,9 +149,9 @@ ConsoleStaticMethod( TerrainBlock, import, S32, 7, 8,
       Con::errorf( "Height map must be square and power of two in size!" );
       return 0;
    }
-   else if ( terrSize < 128 || terrSize > 4096 )
+   else if ( terrSize < 128 || terrSize > 16384 )
    {
-      Con::errorf( "Height map must be between 128 and 4096 in size!" );
+      Con::errorf( "Height map must be between 128 and 16384 in size!" );
       return 0;
    }
 
