@@ -36,8 +36,9 @@
 #include "core/stream/fileStream.h"
 
 #include "console/console.h"
+#include "terrain/terrFile.h"
 
- void CPL_STDCALL HobusGDALErrorHandler(CPLErr eErrClass, int err_no, const char *msg);
+void CPL_STDCALL HobusGDALErrorHandler(CPLErr eErrClass, int err_no, const char *msg);
 
  void CPL_STDCALL HobusGDALErrorHandler(CPLErr eErrClass, int err_no, const char* msg)
  {
@@ -157,6 +158,19 @@ static GDALDataset* crop(GDALDataset* outDS, GDALDataset* inDS, int xoff, int yo
 
 
 
+static void GetGeoRef(GBitmap * bitmap, double * adfGeoTransform, int nXSize, int nYSize, double min, double max)
+{
+   bitmap->sGeoRef.topLeftX = adfGeoTransform[0];
+   bitmap->sGeoRef.topLeftY = adfGeoTransform[3];
+   bitmap->sGeoRef.pixelResolX = adfGeoTransform[1];
+   bitmap->sGeoRef.pixelResolY = adfGeoTransform[5];
+   bitmap->sGeoRef.nXSize = nXSize;
+   bitmap->sGeoRef.nYSize = nYSize;
+   bitmap->sGeoRef.minimum = min;
+   bitmap->sGeoRef.maximum = max;
+   bitmap->sGeoRef.defined = true;
+}
+
 //--------------------------------------
 static bool sReadGDal(Stream &stream, GBitmap *bitmap)
 {
@@ -190,11 +204,16 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
    GDALRasterBand *poBand = preadDS->GetRasterBand(1);
    GDALDataType gddt = poBand->GetRasterDataType();
    GDALColorInterp gdci = poBand->GetColorInterpretation();
-    
+
+
    int   nXSize = poBand->GetXSize();
    int   nYSize = poBand->GetYSize();
-   double min = poBand->GetMinimum();
-   double max = poBand->GetMaximum();
+   poBand->DeleteNoDataValue();
+   double nodataval = poBand->GetNoDataValue();
+   poBand->SetNoDataValue(0.0);
+   //double min = poBand->GetMinimum();
+   //double max = poBand->GetMaximum();
+
     
    double        adfGeoTransform[6];
    Con::printf("Driver: %s/%s\n",
@@ -215,159 +234,191 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
    
 #pragma endregion GeoRef
 
+   F32 min = F32_MAX;
+   F32 max = -F32_MAX;
 
-
-   GDALDriver *poDriver;
-   char **papszMetadata;
-   poDriver = GetGDALDriverManager()->GetDriverByName("PNG");
-   if (poDriver == NULL)
-      return false;
-    
-   GDALDataset* pngDS = poDriver->CreateCopy("./dummy.png", preadDS, FALSE,
-      NULL, NULL, NULL);
-   /* Once we're done, close properly the dataset */
-   /* Once we're done, close properly the dataset */
-   if (preadDS != NULL)
-      GDALClose((GDALDatasetH)preadDS);
-    
-   if (pngDS != NULL)
-      GDALClose((GDALDatasetH)pngDS);
-
-   FileStream  streamPng;
-  
-   streamPng.open("./dummy.png", Torque::FS::File::Read);
-  
-   if (streamPng.getStatus() != Stream::Ok)
+   if (nRasterCount==1 && gddt == GDT_Float32)
    {
-      Con::errorf("Resource<GBitmap>::create - failed to open '%s'", "./dummy.png");
-      return NULL;
-   }
- 
-   //       GBitmap *bmp = new GBitmap;
-  
-   if (!bitmap->readBitmap("png", streamPng))
+      // actually allocate the bitmap space...
+      bitmap->allocateBitmap(nXSize, nYSize,
+         false,            // don't extrude miplevels...
+         GFXFormatR5G5B5A1);          // use 16bit format...
+
+      F32 *pafScanline = static_cast<float *>(CPLMalloc(sizeof(F32) * nXSize));
+
+      for (int i = 0; i < nYSize; i++)
+      {
+         poBand->RasterIO(GF_Read, 0, i, nXSize, 1,
+            pafScanline, nXSize, 1, GDT_Float32,
+            0, 0);
+
+         U8 *rowDest = bitmap->getAddress(0, i);
+
+         for (S32 j = 0; j < nXSize; j++)
+         {
+            U16 * pixelLocation = reinterpret_cast<U16 *>(&rowDest[j * 2]);
+            F32 height = pafScanline[j];
+
+            if (height > 50000 || height < -50000)
+            {
+               pixelLocation[0] = floatToFixed(0.0f);
+            }
+            else
+            {
+               min = getMin(min, height);
+               max = getMax(max, height);
+
+               pixelLocation[0] = floatToFixed(height);
+            }
+
+         }
+      }
+
+      CPLFree(pafScanline);
+
+      GDALClose(preadDS);
+
+      // We know TIFF's don't have any transparency
+      bitmap->setHasTransparency(false);
+   } 
+   else
    {
-      //Con::errorf("Resource<GBitmap>::create - error reading '%s'", path.getFullPath().c_str());
-      //delete bitmap;
-      return false;
-   }
+      //Carga TIFF imagen mediante trasformación a PNG
+      GDALDriver *poDriver;
+      char **papszMetadata;
+      poDriver = GetGDALDriverManager()->GetDriverByName("PNG");
+      if (poDriver == NULL)
+         return false;
 
-   bitmap->sGeoRef.topLeftX = adfGeoTransform[0];
-   bitmap->sGeoRef.topLeftY = adfGeoTransform[3];
-   bitmap->sGeoRef.pixelResolX = adfGeoTransform[1];
-   bitmap->sGeoRef.pixelResolY = adfGeoTransform[5];
-   bitmap->sGeoRef.nXSize = nXSize;
-   bitmap->sGeoRef.nYSize = nYSize;
-   bitmap->sGeoRef.minimum = min;
-   bitmap->sGeoRef.maximum = max;
-   bitmap->sGeoRef.defined = true;
+      GDALDataset* pngDS = poDriver->CreateCopy("./dummy.png", preadDS, FALSE,
+         NULL, NULL, NULL);
+      /* Once we're done, close properly the dataset */
+      /* Once we're done, close properly the dataset */
+      if (preadDS != NULL)
+         GDALClose((GDALDatasetH)preadDS);
+
+      if (pngDS != NULL)
+         GDALClose((GDALDatasetH)pngDS);
+
+      FileStream  streamPng;
+
+      streamPng.open("./dummy.png", Torque::FS::File::Read);
+
+      if (streamPng.getStatus() != Stream::Ok)
+      {
+         Con::errorf("Resource<GBitmap>::create - failed to open '%s'", "./dummy.png");
+         return NULL;
+      }
+
+      //       GBitmap *bmp = new GBitmap;
+
+      if (!bitmap->readBitmap("png", streamPng))
+      {
+         //Con::errorf("Resource<GBitmap>::create - error reading '%s'", path.getFullPath().c_str());
+         //delete bitmap;
+         return false;
+      }
 
 
-
-//    GDALDriver *poDriver;
-//    char **papszMetadata;
-//    poDriver = GetGDALDriverManager()->GetDriverByName("MEM");
-//    if (poDriver == NULL)
-//       return false;
-//    char **cropOptions = NULL;
-// 
-//    GDALDataset* poDstDS = poDriver->Create("./dummy.dat", bitmap->getWidth(), bitmap->getHeight(), 1, GDT_Byte, cropOptions);
-// 
-//    GDALRasterBand* band_out = poDstDS->GetRasterBand(1);
-//    U8 *bitmapbuff = bitmap->getAddress(0, 0);
-//    band_out->RasterIO(GF_Write, 0, 0, bitmap->getWidth(), bitmap->getHeight(), bitmapbuff, bitmap->getWidth(), bitmap->getHeight(), GDT_Byte, 0, 0);
-// 
+      //    GDALDriver *poDriver;
+      //    char **papszMetadata;
+      //    poDriver = GetGDALDriverManager()->GetDriverByName("MEM");
+      //    if (poDriver == NULL)
+      //       return false;
+      //    char **cropOptions = NULL;
+      // 
+      //    GDALDataset* poDstDS = poDriver->Create("./dummy.dat", bitmap->getWidth(), bitmap->getHeight(), 1, GDT_Byte, cropOptions);
+      // 
+      //    GDALRasterBand* band_out = poDstDS->GetRasterBand(1);
+      //    U8 *bitmapbuff = bitmap->getAddress(0, 0);
+      //    band_out->RasterIO(GF_Write, 0, 0, bitmap->getWidth(), bitmap->getHeight(), bitmapbuff, bitmap->getWidth(), bitmap->getHeight(), GDT_Byte, 0, 0);
+      // 
 
 #pragma region cambio de tamaño
-   S32 width = preadDS->GetRasterXSize();
-   S32 height = preadDS->GetRasterYSize();
+      S32 width = preadDS->GetRasterXSize();
+      S32 height = preadDS->GetRasterYSize();
 
-//    if (width != height || !isPow2(width))
-//    {
-//       printf("Height map must be square and power of two in size!");
-//       //return false;
-// 
-//       S32 maxdim = getMax(width, height);
-//       if (!isPow2(maxdim))
-//       {
-//          //Rounding up to next power of 2
-//          int power = 1;
-//          while (power < maxdim)
-//             power *= 2;
-// 
-//          maxdim = power;
-//       }
-// 
-//       width = maxdim;
-//       height = maxdim;
-//    }
+      //    if (width != height || !isPow2(width))
+      //    {
+      //       printf("Height map must be square and power of two in size!");
+      //       //return false;
+      // 
+      //       S32 maxdim = getMax(width, height);
+      //       if (!isPow2(maxdim))
+      //       {
+      //          //Rounding up to next power of 2
+      //          int power = 1;
+      //          while (power < maxdim)
+      //             power *= 2;
+      // 
+      //          maxdim = power;
+      //       }
+      // 
+      //       width = maxdim;
+      //       height = maxdim;
+      //    }
 
-//    bitmap->deleteImage();
-// 
-//    // actually allocate the bitmap space...
-//    bitmap->allocateBitmap(width, height,
-//       false,            // don't extrude miplevels...
-//       format);          // use determined format...
+      //    bitmap->deleteImage();
+      // 
+      //    // actually allocate the bitmap space...
+      //    bitmap->allocateBitmap(width, height,
+      //       false,            // don't extrude miplevels...
+      //       format);          // use determined format...
 
-// 
-// #pragma endregion cambio de tamaño
-// 
-//    GDALDriver *poDriver;
-//    //char **papszMetadata;
-//    poDriver = GetGDALDriverManager()->GetDriverByName("BMP");
-//    if (poDriver == NULL)
-//       return false;
-// 
-//    //create the new (cropped) dataset
-//    //pCroppedRaster = pDriver->Create(cropPath, xSize, ySize, 1, GDT_Float32, NULL) //or something similar
-//    GDALDataset* pngDS = poDriver->Create("./dummy.bmp", width, height, nRasterCount, gddt, NULL);
-// 
-//    crop(pngDS, preadDS, 0, 0, 0, 0);
-// 
-//    //GDALDataset* pngDS = poDriver->CreateCopy("./dummy.png", preadDS, FALSE,
-//    //   NULL, NULL, NULL);
-//    /* Once we're done, close properly the dataset */
-//    /* Once we're done, close properly the dataset */
-//    if (preadDS != NULL)
-//       GDALClose((GDALDatasetH)preadDS);
-// 
-//    if (pngDS != NULL)
-//       GDALClose((GDALDatasetH)pngDS);
-// 
-//    
-// //    FileStream  streamPng;
-// // 
-// //    streamPng.open("./dummy.bmp", Torque::FS::File::Read);
-// // 
-// //    if (streamPng.getStatus() != Stream::Ok)
-// //    {
-// //       Con::errorf("Resource<GBitmap>::create - failed to open '%s'", "./dummy.png");
-// //       return NULL;
-// //    }
-// 
-// //    //       GBitmap *bmp = new GBitmap;
-// // 
-// //    if (!bitmap->readBitmap("bmp", streamPng))
-// //    {
-// //       //Con::errorf("Resource<GBitmap>::create - error reading '%s'", path.getFullPath().c_str());
-// //       //delete bitmap;
-// //       return false;
-// //    }
-// 
-// 
-// 
-// 
-//    /*
-// 
-
-
-
+      // 
+      // #pragma endregion cambio de tamaño
+      // 
+      //    GDALDriver *poDriver;
+      //    //char **papszMetadata;
+      //    poDriver = GetGDALDriverManager()->GetDriverByName("BMP");
+      //    if (poDriver == NULL)
+      //       return false;
+      // 
+      //    //create the new (cropped) dataset
+      //    //pCroppedRaster = pDriver->Create(cropPath, xSize, ySize, 1, GDT_Float32, NULL) //or something similar
+      //    GDALDataset* pngDS = poDriver->Create("./dummy.bmp", width, height, nRasterCount, gddt, NULL);
+      // 
+      //    crop(pngDS, preadDS, 0, 0, 0, 0);
+      // 
+      //    //GDALDataset* pngDS = poDriver->CreateCopy("./dummy.png", preadDS, FALSE,
+      //    //   NULL, NULL, NULL);
+      //    /* Once we're done, close properly the dataset */
+      //    /* Once we're done, close properly the dataset */
+      //    if (preadDS != NULL)
+      //       GDALClose((GDALDatasetH)preadDS);
+      // 
+      //    if (pngDS != NULL)
+      //       GDALClose((GDALDatasetH)pngDS);
+      // 
+      //    
+      // //    FileStream  streamPng;
+      // // 
+      // //    streamPng.open("./dummy.bmp", Torque::FS::File::Read);
+      // // 
+      // //    if (streamPng.getStatus() != Stream::Ok)
+      // //    {
+      // //       Con::errorf("Resource<GBitmap>::create - failed to open '%s'", "./dummy.png");
+      // //       return NULL;
+      // //    }
+      // 
+      // //    //       GBitmap *bmp = new GBitmap;
+      // // 
+      // //    if (!bitmap->readBitmap("bmp", streamPng))
+      // //    {
+      // //       //Con::errorf("Resource<GBitmap>::create - error reading '%s'", path.getFullPath().c_str());
+      // //       //delete bitmap;
+      // //       return false;
+      // //    }
+      // 
+      // 
+      // 
+      // 
+      //    /*
+      // 
+   }
 
 
-
-
-   // We know JPEG's don't have any transparency
-   bitmap->setHasTransparency(false);
+   GetGeoRef(bitmap, adfGeoTransform, nXSize, nYSize, min, max);
    
    return true;
 
