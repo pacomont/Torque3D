@@ -264,8 +264,16 @@ bool FileDialog::Execute()
       return false;
    }
 
-   String resultPath = String(outPath).replace(rootDir, String(""));
-   resultPath = resultPath.replace(0, 1, String("")).c_str(); //kill '\\' prefix
+   String resultPath = String(outPath);
+   resultPath = resultPath.replace(rootDir, String(""));
+
+   bool outsideruntime = true;
+   if (String(outPath)[1] != ':') // dentro del entorno de ejecuación
+   {
+      resultPath = resultPath.replace(0, 1, String("")).c_str(); //kill '\\' prefix
+      outsideruntime = false;
+   }
+
    resultPath = resultPath.replace(String("\\"), String("/"));
 
    // Did we select a file?
@@ -278,7 +286,10 @@ bool FileDialog::Execute()
    if (mData.mStyle & FileDialogData::FDS_OPEN || mData.mStyle & FileDialogData::FDS_SAVE)
    {
       // Single file selection, do it the easy way
-      mData.mFile = Platform::makeRelativePathName(resultPath.c_str(), NULL);
+      if(outsideruntime)
+         mData.mFile = StringTable->insert(resultPath.c_str());
+      else
+         mData.mFile = Platform::makeRelativePathName(resultPath.c_str(), NULL);
    }
    else if (mData.mStyle & FileDialogData::FDS_MULTIPLEFILES)
    {
