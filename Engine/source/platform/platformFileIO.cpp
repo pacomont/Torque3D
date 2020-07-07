@@ -389,7 +389,7 @@ char * Platform::makeFullPathName(const char *path, char *buffer, U32 size, cons
 bool Platform::isFullPath(const char *path)
 {
    // Quick way out
-   if(path[0] == '/' || path[1] == ':')
+   if((path[0] == '/' && path[1] == '/') || path[1] == ':')
       return true;
 
    return false;

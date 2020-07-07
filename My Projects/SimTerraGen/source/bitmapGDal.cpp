@@ -184,7 +184,8 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
 
    // Write out the actual Collada file
    char inFileName[4096];
-   String file = path.getFullPathWithoutRoot();
+
+   String file = (path.getRoot().compare("game", 0) == 0) ? path.getFullPathWithoutRoot() : path.getFullPath();
 
    Platform::makeFullPathName(file, inFileName, 4096);
 

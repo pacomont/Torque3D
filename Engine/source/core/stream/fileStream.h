@@ -62,6 +62,8 @@ public:
    bool flush();
    FileStream* clone() const;
 
+   Torque::FS::FileRef getFileRef() const { return mFile; }
+
 protected:
    // more mandatory methods from Stream base class...
    virtual bool _read(const U32 i_numBytes, void *o_pBuffer);
