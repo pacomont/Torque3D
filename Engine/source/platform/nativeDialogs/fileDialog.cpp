@@ -268,7 +268,7 @@ bool FileDialog::Execute()
    resultPath = resultPath.replace(rootDir, String(""));
 
    bool outsideruntime = true;
-   if (String(outPath)[1] != ':') // dentro del entorno de ejecuación
+   if (String(resultPath)[1] != ':') // dentro del entorno de ejecuación
    {
       resultPath = resultPath.replace(0, 1, String("")).c_str(); //kill '\\' prefix
       outsideruntime = false;
