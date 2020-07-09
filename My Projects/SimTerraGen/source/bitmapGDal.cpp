@@ -216,7 +216,6 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
    //double max = poBand->GetMaximum();
 
     
-   double        adfGeoTransform[6];
    Con::printf("Driver: %s/%s\n",
       preadDS->GetDriver()->GetDescription(),
       preadDS->GetDriver()->GetMetadataItem(GDAL_DMD_LONGNAME));
@@ -225,6 +224,8 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
       preadDS->GetRasterCount());
    if (preadDS->GetProjectionRef() != NULL)
       Con::printf("Projection is `%s'\n", preadDS->GetProjectionRef());
+
+   double        adfGeoTransform[6];
    if (preadDS->GetGeoTransform(adfGeoTransform) == CE_None)
    {
       Con::printf("Origin = (%.6f,%.6f)\n",
@@ -235,8 +236,8 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
    
 #pragma endregion GeoRef
 
-   F32 min = F32_MAX;
-   F32 max = -F32_MAX;
+   F32 min = 50000;
+   F32 max = -20000;
 
    if (nRasterCount==1 && gddt == GDT_Float32)
    {
@@ -260,7 +261,7 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
             U16 * pixelLocation = reinterpret_cast<U16 *>(&rowDest[j * 2]);
             F32 height = pafScanline[j];
 
-            if (height > 50000 || height < -50000)
+            if (height > 50000 || height < -20000)
             {
                pixelLocation[0] = floatToFixed(0.0f);
             }
@@ -279,11 +280,15 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
 
       GDALClose(preadDS);
 
+      GetGeoRef(bitmap, adfGeoTransform, nXSize, nYSize, min, max);
+
       // We know TIFF's don't have any transparency
       bitmap->setHasTransparency(false);
    } 
    else
-   {
+   {  
+      min = poBand->GetMinimum();
+      max = poBand->GetMaximum();
       //Carga TIFF imagen mediante trasformación a PNG
       GDALDriver *poDriver;
       char **papszMetadata;
@@ -416,10 +421,11 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
       // 
       //    /*
       // 
+
+      GetGeoRef(bitmap, adfGeoTransform, nXSize, nYSize, min, max);
    }
 
-
-   GetGeoRef(bitmap, adfGeoTransform, nXSize, nYSize, min, max);
+   
    
    return true;
 

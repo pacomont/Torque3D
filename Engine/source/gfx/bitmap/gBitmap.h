@@ -59,6 +59,19 @@ public:
       c_maxMipLevels = 13 
    };
 
+   struct GeoRef
+   {
+      bool defined = false;
+      double topLeftX;
+      double topLeftY;
+      double pixelResolX;
+      double pixelResolY;
+      int   nXSize;
+      int   nYSize;
+      double minimum;
+      double maximum;
+   } sGeoRef;
+
    struct Registration
    {
       /// The read function prototype.

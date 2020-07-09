@@ -652,9 +652,23 @@ function TerrainImportGui::doOpenDialog( %this, %filter, %callback )
 function TerrainImportGui_SetHeightfield( %name )
 {
    TerrainImportGui-->HeightfieldFilename.setText( %name );
+   
+   %bitmapInfo = getBitmapInfo( %name );
+   
+   %pixelResol = getWord( %bitmapInfo, 3 );
+
+   if(%pixelResol $= "")
+      return;   
+
+   TerrainImportGui-->MetersPerPixel.setText( %pixelResol );   
+   
+   %minimum = getWord( %bitmapInfo, 4 );
+   %maximun = getWord( %bitmapInfo, 5 );
+      
+   TerrainImportGui-->HeightScale.setText( %maximun-%minimum); //aunque no se usa por ser lectura directa de 
 }
 
-$TerrainImportGui::HeightFieldFilter = "Heightfield Files (*.png, *.bmp, *.jpg, *.gif)|*.png;*.bmp;*.jpg;*.gif|All Files (*.*)|*.*|";
+$TerrainImportGui::HeightFieldFilter = "Heightfield Files (*.png, *.bmp, *.jpg, *.gif, *.tif)|*.png;*.bmp;*.jpg;*.gif;*.tif|All Files (*.*)|*.*|";
 $TerrainImportGui::OpacityMapFilter = "Opacity Map Files (*.png, *.bmp, *.jpg, *.gif)|*.png;*.bmp;*.jpg;*.gif|All Files (*.*)|*.*|";
 
 function TerrainImportGui::browseForHeightfield( %this )
@@ -668,13 +682,14 @@ function TerrainImportGuiAddOpacityMap( %name )
    // the file here and figure
    // out how many channels it has.
 
-   %txt = makeRelativePath( %name, getWorkingDirectory() );   
+   %workdir = getWorkingDirectory();
+   %txt = makeRelativePath( %name, %workdir );   
    
    // Will need to do this stuff
    // once per channel in the file
    // currently it works with just grayscale.   
    %channelsTxt = "R" TAB "G" TAB "B" TAB "A";
-   %bitmapInfo = getBitmapinfo( %name );
+   %bitmapInfo = getBitmapInfo( %name );
    
    %channelCount = getWord( %bitmapInfo, 2 );   
    
