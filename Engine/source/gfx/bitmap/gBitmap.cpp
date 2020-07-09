@@ -1174,16 +1174,3 @@ Resource<GBitmap> GBitmap::_search(const Torque::Path &path)
    return Resource< GBitmap >( NULL );
 }
 
-DefineEngineFunction( getBitmapInfo, String, ( const char *filename ),,
-   "Returns image info in the following format: width TAB height TAB bytesPerPixel. "
-   "It will return an empty string if the file is not found.\n"
-   "@ingroup Rendering\n" )
-{
-   Resource<GBitmap> image = GBitmap::load( filename );
-   if ( !image )
-      return String::EmptyString;
-
-   return String::ToString( "%d\t%d\t%d", image->getWidth(), 
-                                          image->getHeight(),
-                                          image->getBytesPerPixel() );
-}

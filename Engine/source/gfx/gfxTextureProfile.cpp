@@ -170,3 +170,28 @@ DefineEngineFunction( getTextureProfileStats, String, (),,
    return result.end();
 }
 
+DefineConsoleFunction(getBitmapInfo, String, (const char *filename), ,
+   "Returns image info in the following format: width TAB height TAB bytesPerPixel. "
+   "It will return an empty string if the file is not found.\n"
+   "@ingroup Rendering\n")
+{
+   Resource<GBitmap> image = GBitmap::load(filename);
+   if (!image)
+      return String::EmptyString;
+
+   if(image->sGeoRef.defined)
+   {
+      return String::ToString("%d\t%d\t%d\t%d\t%d\t%d", 
+         image->getWidth(),
+         image->getHeight(),
+         image->getBytesPerPixel(),
+         image->sGeoRef.pixelResolX,
+         image->sGeoRef.minimum,
+         image->sGeoRef.maximum
+      );
+   }
+
+   return String::ToString("%d\t%d\t%d", image->getWidth(),
+      image->getHeight(),
+      image->getBytesPerPixel());
+}
