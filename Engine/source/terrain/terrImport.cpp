@@ -167,7 +167,7 @@ ConsoleStaticMethod( TerrainBlock, import, S32, 7, 8,
          String fileName = StringUnit::getUnit( fileNameWithChannel, 0, "\t" );
          String channel = StringUnit::getUnit( fileNameWithChannel, 1, "\t" );
          
-         if ( fileName.isEmpty() )
+         if ( fileName.isEmpty() || fileName.equal("BaseMap") )
             continue;
 
          if ( !channel.isEmpty() )
