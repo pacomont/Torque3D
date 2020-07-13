@@ -265,7 +265,10 @@ bool TerrainBlock::_setBaseTexSize( void *obj, const char *index, const char *da
    // base texture with your installer.
    //
 
-   S32 texSize = mClamp( dAtoi( data ), 0, 2048 );
+   const U32 maxTextureSize = GFX->getCardProfiler()->queryProfile("maxTextureSize", 1024);
+
+
+   S32 texSize = mClamp( dAtoi( data ), 0, maxTextureSize);
    if ( terrain->mBaseTexSize != texSize )
    {
       terrain->mBaseTexSize = texSize;
