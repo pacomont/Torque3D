@@ -221,8 +221,12 @@ function TerrainMaterialDlg::changeBase( %this )
          %file = "tools/materialEditor/gui/unknownImage";
    }
    
-   %file = makeRelativePath( %file, getMainDotCsDir() );
-   %ctrl.setBitmap( %file );  
+   %relfile = makeRelativePath( %file, getMainDotCsDir() );
+   %res = strchrpos(%relfile, "../..",0);
+   if(%res>=0) 
+      %ctrl.setBitmap( %file );  // fuera del entorno
+   else
+      %ctrl.setBitmap( %relfile ); 
 }
 
 //-----------------------------------------------------------------------------
