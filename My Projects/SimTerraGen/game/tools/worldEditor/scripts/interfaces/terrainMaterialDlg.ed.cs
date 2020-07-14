@@ -54,10 +54,11 @@ function TerrainMaterialDlg::show( %this, %matIndex, %terrMat, %onApplyCallback 
 
 //-----------------------------------------------------------------------------
 
-function TerrainMaterialDlg::showByObjectId( %this, %matObjectId, %onApplyCallback )
+function TerrainMaterialDlg::showByObjectId( %this, %matObjectId, %terrainSize, %onApplyCallback )
 {
    Canvas.pushDialog( %this );
      
+   %this.terrainSize = %terrainSize;
    %this.matIndex = -1;
    %this.onApplyCallback = %onApplyCallback;
                  
@@ -309,6 +310,7 @@ function TerrainMaterialDlg::newMat( %this )
       internalName = %matName;
       parentGroup = TerrainMaterialDlgNewGroup;
    };
+   %newMat.diffuseSize = %this.terrainSize;
    %newMat.setFileName( "art/terrains/materials.cs" );
    
    // Mark it as dirty and to be saved in the default location.
