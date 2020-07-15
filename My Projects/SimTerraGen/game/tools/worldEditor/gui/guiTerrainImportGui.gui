@@ -130,7 +130,7 @@
          password = "0";
          passwordMask = "*";
          text = "";
-         maxLength = "1024";
+         maxLength = "64";
          margin = "0 0 0 0";
          padding = "0 0 0 0";
          anchorTop = "1";
@@ -850,5 +850,22 @@ function TerrainImportGui::addBaseTexture( %this )
    TerrainImportGui.namesArray.echo();   
    
    %count = %opacityList.rowCount();
-   %opacityList.addRow( %count, "BaseMap" TAB "R" );
+   %addRow = %opacityList.addRow( %count, "BaseMap" TAB "R" );
+   
+   %opacityList.setSelectedRow(%addRow);
+   
+
+   %terrainName = %this-->TerrainName.getText();
+   if( !( isObject( %terrainName ) && %terrainName.isMemberOfClass( "TerrainBlock" ) ) &&
+       !Editor::validateObjectName( %terrainName ) )
+      return;   
+   
+   
+   %this.onOpacityListDblClick();
+   
+   TerrainMaterialDlg.newMat(%terrainName @ "BaseMat");
+   
+   TerrainMaterialDlg.changeBase();
+   
+   TerrainMaterialDlg.dialogApply();
 }

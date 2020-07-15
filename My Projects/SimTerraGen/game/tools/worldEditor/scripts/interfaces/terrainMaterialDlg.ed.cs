@@ -58,7 +58,7 @@ function TerrainMaterialDlg::showByObjectId( %this, %matObjectId, %terrainSize, 
 {
    Canvas.pushDialog( %this );
      
-   %this.terrainSize = %terrainSize;
+   %this.terrainSize = %terrainSize; //para que cubra todo el terreno
    %this.matIndex = -1;
    %this.onApplyCallback = %onApplyCallback;
                  
@@ -299,10 +299,13 @@ function TerrainMaterialDlg::changeNormal( %this )
 
 //-----------------------------------------------------------------------------
 
-function TerrainMaterialDlg::newMat( %this )
+function TerrainMaterialDlg::newMat( %this, %matName )
 {
+   if( %matName $= "" )
+      %matName = "newMaterial";
+      
    // Create a unique material name.
-   %matName = getUniqueInternalName( "newMaterial", TerrainMaterialSet, true );
+   %matName = getUniqueInternalName( %matName, TerrainMaterialSet, true );
 
    // Create the new material.
    %newMat = new TerrainMaterial()
