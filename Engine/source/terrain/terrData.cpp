@@ -181,7 +181,7 @@ EndImplementEnumType;
 
 TerrainBlock::TerrainBlock()
  : mLightMap( NULL ),
-   mLightMapSize( 256 ),
+   mLightMapSize( 512 ),
    mCRC( 0 ),
    mMaxDetailDistance( 0.0f ),
    mBaseTexScaleConst( NULL ),
@@ -189,7 +189,7 @@ TerrainBlock::TerrainBlock()
    mDetailsDirty( false ),
    mLayerTexDirty( false ),
    mBaseTexSize( 1024 ),
-   mBaseTexFormat( TerrainBlock::JPG ),
+   mBaseTexFormat( TerrainBlock::DDS ),
    mCell( NULL ),
    mBaseMaterial( NULL ),
    mDefaultMatInst( NULL ),

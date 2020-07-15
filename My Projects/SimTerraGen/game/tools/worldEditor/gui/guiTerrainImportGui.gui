@@ -648,6 +648,8 @@ function TerrainImportGui::import( %this )
                                   %opacityNames, 
                                   %materialNames,
                                   %flipYAxis );
+                                  
+   %obj.baseTexSize = $terrainWidth;
 
    Canvas.popDialog( %this );
 
@@ -840,6 +842,8 @@ function TerrainImportGui_TerrainMaterialApplyCallback( %mat, %matIndex )
    %opacityList.setRowById( %itemIdx, %rowTxt TAB %mat.internalName TAB %mat );
 }
 
+$terrainWidth = 1024;
+
 function TerrainImportGui::addBaseTexture( %this )
 {
    %opacityList = TerrainImportGui-->OpacityLayerTextList;
@@ -865,7 +869,7 @@ function TerrainImportGui::addBaseTexture( %this )
    
    TerrainMaterialDlg.newMat(%terrainName @ "BaseMat");
    
-   TerrainMaterialDlg.changeBase();
+   $terrainWidth = TerrainMaterialDlg.changeBase();
    
    TerrainMaterialDlg.dialogApply();
 }

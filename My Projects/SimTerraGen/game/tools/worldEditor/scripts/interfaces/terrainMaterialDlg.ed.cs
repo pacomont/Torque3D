@@ -224,10 +224,14 @@ function TerrainMaterialDlg::changeBase( %this )
    
    %relfile = makeRelativePath( %file, getMainDotCsDir() );
    %res = strchrpos(%relfile, "../..",0);
-   if(%res>=0) 
-      %ctrl.setBitmap( %file );  // fuera del entorno
-   else
-      %ctrl.setBitmap( %relfile ); 
+   if(%res<0) 
+      %file = %relfile;  // dentro del entorno de ejecución
+
+   %ctrl.setBitmap( %file ); 
+   %bitmapInfo = getBitmapInfo( %file );
+   
+   %width = getWord( %bitmapInfo, 0 );
+   return %width;  
 }
 
 //-----------------------------------------------------------------------------
