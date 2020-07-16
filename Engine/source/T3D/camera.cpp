@@ -1765,9 +1765,9 @@ void Camera::autoFitRadius( F32 radius )
    F32 fov = mDegToRad( getCameraFov() );
    F32 viewradius = (radius * 2.0f) / mTan(fov * 0.5f);
 
-   // Be careful of infinite sized objects.  Clip to 16km
-   if(viewradius > 16000.0f)
-      viewradius = 16000.0f;
+   // Be careful of infinite sized objects.  Clip to 64km
+   if(viewradius > 64000.0f)
+      viewradius = 64000.0f;
 
    if(mMode == EditOrbitMode && mValidEditOrbitPoint)
    {
