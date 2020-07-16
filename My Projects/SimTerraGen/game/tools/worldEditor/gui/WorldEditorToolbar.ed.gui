@@ -48,7 +48,7 @@
          MinExtent = "8 8";
          canSave = "1";
          Visible = "1";
-         Command = "commandToServer('EditorCameraAutoFit', EWorldEditor.getSelectionRadius()+1);";
+         Command = "commandToServer('EditorCameraAutoFit', EWorldEditor.getSelectionRadius()+1, EditorGui.currentDisplayType);";
          tooltipprofile = "ToolsGuiToolTipProfile";
          ToolTip = "Fit View To Selection (F)";
          hovertime = "1000";

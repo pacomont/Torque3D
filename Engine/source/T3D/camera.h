@@ -219,7 +219,7 @@ class Camera: public ShapeBase
 
       /// Orient the camera to view the given radius.  Requires that an
       /// edit orbit point has been set.
-      void autoFitRadius( F32 radius );
+      void autoFitRadius( F32 radius, S32 displayType);
 
       /// @}
 

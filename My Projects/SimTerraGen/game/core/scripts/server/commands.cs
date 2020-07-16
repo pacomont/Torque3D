@@ -199,9 +199,9 @@ function serverCmdEditorOrbitCameraSelectChange(%client, %size, %center)
    }
 }
 
-function serverCmdEditorCameraAutoFit(%client, %radius)
+function serverCmdEditorCameraAutoFit(%client, %radius, %displayType)
 {
-   %client.camera.autoFitRadius(%radius);
+   %client.camera.autoFitRadius(%radius, %displayType);
    %client.setControlObject(%client.camera);
   clientCmdSyncEditorGui();
 }

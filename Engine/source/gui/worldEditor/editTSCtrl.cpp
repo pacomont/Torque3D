@@ -1023,8 +1023,8 @@ static void sceneBoundsCalcCallback(SceneObject* obj, void *key)
 {
    // Early out for those objects that slipped through the mask check
    // because they belong to more than one type.
-   if((obj->getTypeMask() & EditTSCtrl::smSceneBoundsMask) != 0)
-      return;
+//    if((obj->getTypeMask() & EditTSCtrl::smSceneBoundsMask) != 0)
+//       return;
 
    if(obj->isGlobalBounds())
       return;

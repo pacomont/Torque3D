@@ -1760,7 +1760,7 @@ void Camera::lookAt( const Point3F& pos )
 
 //----------------------------------------------------------------------------
 
-void Camera::autoFitRadius( F32 radius )
+void Camera::autoFitRadius( F32 radius, S32 displayType)
 {
    F32 fov = mDegToRad( getCameraFov() );
    F32 viewradius = (radius * 2.0f) / mTan(fov * 0.5f);
@@ -1768,6 +1768,13 @@ void Camera::autoFitRadius( F32 radius )
    // Be careful of infinite sized objects.  Clip to 64km
    if(viewradius > 64000.0f)
       viewradius = 64000.0f;
+
+//    if(displayType == 0) //DisplayTypeTop)
+//    {
+//       
+// 
+//       return;
+//    }
 
    if(mMode == EditOrbitMode && mValidEditOrbitPoint)
    {
@@ -1790,7 +1797,8 @@ void Camera::autoFitRadius( F32 radius )
 
       mPosition = mEditOrbitPoint;
       _setPosition(mPosition, mRot);
-      _calcEditOrbitPoint(&mObjToWorld, mRot);
+      if (displayType != 0)
+         _calcEditOrbitPoint(&mObjToWorld, mRot);
    }
 }
 
@@ -2127,12 +2135,12 @@ DefineEngineMethod( Camera, setEditOrbitPoint, void, (Point3F point), ,
 
 //----------------------------------------------------------------------------
 
-DefineEngineMethod( Camera, autoFitRadius, void, (F32 radius), ,
+DefineEngineMethod( Camera, autoFitRadius, void, (F32 radius, S32 displayType), ,
                    "Move the camera to fully view the given radius.\n\n"
                    "@note For this operation to take affect a valid edit orbit point must first be specified.  See Camera::setEditOrbitPoint().\n"
                    "@param radius The radius to view.")
 {
-   object->autoFitRadius(radius);
+   object->autoFitRadius(radius, displayType);
 }
 
 //----------------------------------------------------------------------------
