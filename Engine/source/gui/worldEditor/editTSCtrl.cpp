@@ -677,9 +677,7 @@ bool EditTSCtrl::onInputEvent(const InputEventInfo & event)
 
 void EditTSCtrl::orthoZoom( F32 steps )
 {
-   //TODO: this really should be proportional
-   
-   mOrthoFOV += steps;
+   mOrthoFOV += mOrthoFOV*steps/200.0f;
 
    if( mOrthoFOV < 1.0f )
       mOrthoFOV = 1.0f;
