@@ -591,7 +591,7 @@ bool EditTSCtrl::onMouseWheelUp( const GuiEvent &event )
    // Looks like this should be zooming based on a factor of the GuiEvent.fval
    if( isOrthoDisplayType() && !event.modifier )
    {
-      orthoZoom( -2.f );
+      orthoZoom( -8.f );
       return true;
    }
 
@@ -606,7 +606,7 @@ bool EditTSCtrl::onMouseWheelDown( const GuiEvent &event )
    // Looks like this should be zooming based on a factor of the GuiEvent.fval
    if(mDisplayType != DisplayTypePerspective && !event.modifier)
    {
-      orthoZoom( 2.f );
+      orthoZoom( 8.f );
       return true;
    }
 
@@ -685,7 +685,7 @@ void EditTSCtrl::orthoZoom( F32 steps )
 
 void EditTSCtrl::calcOrthoCamOffset(F32 mousex, F32 mousey, U8 modifier)
 {
-   F32 camScale = 0.01f;
+   F32 camScale = 0.002f;
 
    switch(mDisplayType)
    {
