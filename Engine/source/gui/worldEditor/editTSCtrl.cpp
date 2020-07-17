@@ -521,13 +521,13 @@ void EditTSCtrl::onRightMouseDragged(const GuiEvent & event)
    make3DMouseEvent(mLastEvent, event);
    on3DRightMouseDragged(mLastEvent);
 
-   // Handle zoom of orthographic views.
-   
+   // Handle translation of orthographic views.
    if( isOrthoDisplayType() )
    {
-      orthoZoom( ( event.mousePoint.y - mLastMousePos.y ) * 0.5f );
+      calcOrthoCamOffset((event.mousePoint.x - mLastMousePos.x), (event.mousePoint.y - mLastMousePos.y), event.modifier);
       mLastMousePos = event.mousePoint;
    }
+
 }
 
 void EditTSCtrl::onMiddleMouseDown(const GuiEvent & event)
@@ -577,11 +577,10 @@ void EditTSCtrl::onMiddleMouseUp(const GuiEvent & event)
 
 void EditTSCtrl::onMiddleMouseDragged(const GuiEvent & event)
 {
-   // Handle translation of orthographic views.
-   
-   if( isOrthoDisplayType() )
+   // Handle zoom of orthographic views.
+   if (isOrthoDisplayType())
    {
-      calcOrthoCamOffset((event.mousePoint.x - mLastMousePos.x), (event.mousePoint.y - mLastMousePos.y), event.modifier);
+      orthoZoom((event.mousePoint.y - mLastMousePos.y) * 0.5f);
       mLastMousePos = event.mousePoint;
    }
 }
