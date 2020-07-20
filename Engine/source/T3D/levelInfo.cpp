@@ -88,7 +88,9 @@ LevelInfo::LevelInfo()
       mAmbientLightBlendPhase( 1.f ),
       mSoundAmbience( NULL ),
       mSoundDistanceModel( SFXDistanceModelLinear ),
-      mSoundscape( NULL )
+      mSoundscape( NULL ),
+      geo_topLeft(Point2F::Zero),
+      projection(String::EmptyString)
 {
    mFogData.density = 0.0f;
    mFogData.densityOffset = 0.0f;
@@ -153,7 +155,18 @@ void LevelInfo::initPersistFields()
       addField( "canvasClearColor", TypeColorI, Offset( mCanvasClearColor, LevelInfo ),
          "The color used to clear the background before the scene or any GUIs are rendered." );
 
+
    endGroup( "LevelInfo" );
+
+   addGroup("Georeference");
+
+   addField("topLeftUTM", TypePoint2F, Offset(geo_topLeft, LevelInfo), "Lop left position of the world (UTM).");
+
+   addField("projection", TypeRealString, Offset(projection, LevelInfo), "Lop left position of the world (UTM).");
+
+
+   endGroup("Georeference");
+
 
    addGroup( "Lighting" );
 
@@ -207,6 +220,8 @@ U32 LevelInfo::packUpdate(NetConnection *conn, U32 mask, BitStream *stream)
    stream->write( mFogData.color );
 
    stream->write( mCanvasClearColor );
+   mathWrite(*stream, geo_topLeft);
+   stream->write(projection);
    stream->write( mWorldSize );
 
    stream->writeFlag( mAdvancedLightmapSupport );
@@ -236,6 +251,8 @@ void LevelInfo::unpackUpdate(NetConnection *conn, BitStream *stream)
    stream->read( &mFogData.color );
 
    stream->read( &mCanvasClearColor );
+   mathRead(*stream, &geo_topLeft );
+   stream->read(&projection);
    stream->read( &mWorldSize );
 
    mAdvancedLightmapSupport = stream->readFlag();
@@ -282,6 +299,8 @@ bool LevelInfo::onAdd()
    
    if( isClientObject() )
    {
+	  assignName("theClientLevelInfo");	// para que el cliente pueda modificar localmente los ajustes de LevelInfo
+
       SFX->setDistanceModel( mSoundDistanceModel );
       
       // Set up the global ambient soundscape.
@@ -378,4 +397,28 @@ void LevelInfo::setLevelAccuTexture(const String& name)
          gLevelAccuMap = mAccuTexture;
    }
    AccumulationVolume::refreshVolumes();
+}
+
+//PACO
+void LevelInfo::setNearClip( F32 nearClip )
+{
+   SceneManager *sm;
+   if ( isClientObject() )
+      sm = gClientSceneGraph;
+   else
+      sm = gServerSceneGraph;
+   if ( nearClip <= 0.0f )
+      nearClip = 0.001f;
+   mNearClip = nearClip;
+   sm->setNearClip( mNearClip );
+}
+ConsoleMethod( LevelInfo, setNearClip, void, 3, 3, "( F32 nearClip )")
+{
+	object->setNearClip( dAtof( argv[2] ));
+}
+
+//PACO
+ConsoleMethod( LevelInfo, Update, void, 2, 2, "( )")
+{
+	object->inspectPostApply(); // para ejecutar _updateSceneGraph();
 }

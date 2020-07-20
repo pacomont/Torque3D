@@ -215,16 +215,6 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
    //double min = poBand->GetMinimum();
    //double max = poBand->GetMaximum();
 
-    
-   Con::printf("Driver: %s/%s\n",
-      preadDS->GetDriver()->GetDescription(),
-      preadDS->GetDriver()->GetMetadataItem(GDAL_DMD_LONGNAME));
-   Con::printf("Size is %dx%dx%d\n",
-      preadDS->GetRasterXSize(), preadDS->GetRasterYSize(),
-      preadDS->GetRasterCount());
-   if (preadDS->GetProjectionRef() != NULL)
-      Con::printf("Projection is `%s'\n", preadDS->GetProjectionRef());
-
    double        adfGeoTransform[6];
    if (preadDS->GetGeoTransform(adfGeoTransform) == CE_None)
    {
@@ -278,9 +268,20 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
 
       CPLFree(pafScanline);
 
-      GDALClose(preadDS);
-
       GetGeoRef(bitmap, adfGeoTransform, nXSize, nYSize, min, max);
+
+      sprintf_s(bitmap->sGeoRef.driver, 128, "%s/t%s",
+         preadDS->GetDriver()->GetDescription(),
+         preadDS->GetDriver()->GetMetadataItem(GDAL_DMD_LONGNAME));
+
+      sprintf_s(bitmap->sGeoRef.size, 512, "%d %d %d",
+         preadDS->GetRasterXSize(), preadDS->GetRasterYSize(),
+         preadDS->GetRasterCount());
+
+      sprintf_s(bitmap->sGeoRef.projection, 512, "%s",
+         preadDS->GetProjectionRef() == NULL ? "0" : preadDS->GetProjectionRef());
+
+      GDALClose(preadDS);
 
       // We know TIFF's don't have any transparency
       bitmap->setHasTransparency(false);

@@ -64,6 +64,11 @@ class LevelInfo : public NetObject
 
       ColorI mCanvasClearColor;
 
+      Point2F geo_topLeft; //GeoRef
+      String projection;
+
+      String SimTerraGen;
+
       /// @name Lighting Properties
       /// @{
 
@@ -105,7 +110,7 @@ class LevelInfo : public NetObject
       String mAccuTextureName;
 
    public:
-
+	  void setNearClip( F32 nearClip ); // MACSK ++
       LevelInfo();
       virtual ~LevelInfo();
 
