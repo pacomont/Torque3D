@@ -727,6 +727,16 @@ function TerrainImportGui_SetHeightfield( %name )
    %maximun = getWord( %bitmapInfo, 5 );
       
    TerrainImportGui-->HeightScale.setText( %maximun-%minimum); //aunque no se usa por ser lectura directa de 
+   
+   theLevelInfo.minimum = %minimum;
+   theLevelInfo.maximun = %maximun;
+   
+   %topLeftX = getWord( %bitmapInfo, 6 );
+   %topLeftY = getWord( %bitmapInfo, 7 );
+   
+   theLevelInfo.topLeftUTM = %topLeftX SPC %topLeftY;
+   
+   Inspector.inspect(theLevelInfo);
 }
 
 $TerrainImportGui::HeightFieldFilter = "Heightfield Files (*.png, *.bmp, *.jpg, *.gif, *.tif)|*.png;*.bmp;*.jpg;*.gif;*.tif|All Files (*.*)|*.*|";
