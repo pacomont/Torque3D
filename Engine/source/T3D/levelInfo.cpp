@@ -88,9 +88,7 @@ LevelInfo::LevelInfo()
       mAmbientLightBlendPhase( 1.f ),
       mSoundAmbience( NULL ),
       mSoundDistanceModel( SFXDistanceModelLinear ),
-      mSoundscape( NULL ),
-      geo_topLeft(Point2F::Zero),
-      projection(String::EmptyString)
+      mSoundscape( NULL )
 {
    mFogData.density = 0.0f;
    mFogData.densityOffset = 0.0f;
@@ -158,16 +156,6 @@ void LevelInfo::initPersistFields()
 
    endGroup( "LevelInfo" );
 
-   addGroup("Georeference");
-
-   addField("topLeftUTM", TypePoint2F, Offset(geo_topLeft, LevelInfo), "Lop left position of the world (UTM).");
-
-   addField("projection", TypeRealString, Offset(projection, LevelInfo), "Lop left position of the world (UTM).");
-
-
-   endGroup("Georeference");
-
-
    addGroup( "Lighting" );
 
       addField( "ambientLightBlendPhase", TypeF32, Offset( mAmbientLightBlendPhase, LevelInfo ),
@@ -220,8 +208,7 @@ U32 LevelInfo::packUpdate(NetConnection *conn, U32 mask, BitStream *stream)
    stream->write( mFogData.color );
 
    stream->write( mCanvasClearColor );
-   mathWrite(*stream, geo_topLeft);
-   stream->write(projection);
+
    stream->write( mWorldSize );
 
    stream->writeFlag( mAdvancedLightmapSupport );
@@ -251,8 +238,7 @@ void LevelInfo::unpackUpdate(NetConnection *conn, BitStream *stream)
    stream->read( &mFogData.color );
 
    stream->read( &mCanvasClearColor );
-   mathRead(*stream, &geo_topLeft );
-   stream->read(&projection);
+
    stream->read( &mWorldSize );
 
    mAdvancedLightmapSupport = stream->readFlag();

@@ -64,9 +64,6 @@ class LevelInfo : public NetObject
 
       ColorI mCanvasClearColor;
 
-      Point2F geo_topLeft; //GeoRef
-      String projection;
-
       String SimTerraGen;
 
       /// @name Lighting Properties
