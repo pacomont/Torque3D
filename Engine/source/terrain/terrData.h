@@ -190,6 +190,9 @@ protected:
 	/// Allows the terrain to cast shadows onto itself and other objects.
 	bool mCastShadows;
 
+   Point2F geo_topLeft; //GeoRef
+   String projection;
+
    /// A global LOD scale used to tweak the default
    /// terrain screen error value.
    static F32 smLODScale;

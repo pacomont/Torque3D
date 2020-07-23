@@ -197,7 +197,9 @@ TerrainBlock::TerrainBlock()
    mPhysicsRep( NULL ),
    mScreenError( 16 ),
    mCastShadows( true ),
-   mZoningDirty( false )
+   mZoningDirty(false),
+   geo_topLeft(Point2F::Zero),
+   projection(String::EmptyString)
 {
    mTypeMask = TerrainObjectType | StaticObjectType | StaticShapeObjectType;
    mNetFlags.set(Ghostable | ScopeAlways);
@@ -1127,6 +1129,14 @@ void TerrainBlock::initPersistFields()
 
    endGroup( "Media" );
 
+   addGroup("Georeference");
+
+   addField("projection", TypeRealString, Offset(projection, TerrainBlock), "Lop left position of the world (UTM).");
+
+   addField("topLeftUTM", TypePoint2F, Offset(geo_topLeft, TerrainBlock), "Lop left position of the world (UTM).");
+
+   endGroup("Georeference");
+
    addGroup( "Misc" );
 
       addField( "castShadows", TypeBool, Offset( mCastShadows, TerrainBlock ),   
@@ -1183,6 +1193,8 @@ U32 TerrainBlock::packUpdate(NetConnection* con, U32 mask, BitStream *stream)
    {
       stream->write( mTerrFileName );
       stream->write( mCRC );
+      mathWrite(*stream, geo_topLeft);
+      stream->write(projection);
    }
 
    if ( stream->writeFlag( mask & SizeMask ) )
@@ -1227,6 +1239,9 @@ void TerrainBlock::unpackUpdate(NetConnection* con, BitStream *stream)
          setFile( terrFile );
       else
          mTerrFileName = terrFile;
+
+      mathRead(*stream, &geo_topLeft);
+      stream->read(&projection);
    }
 
    if ( stream->readFlag() ) // SizeMask
