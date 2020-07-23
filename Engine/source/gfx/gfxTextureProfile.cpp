@@ -179,19 +179,31 @@ DefineConsoleFunction(getBitmapInfo, String, (const char *filename), ,
    if (!image)
       return String::EmptyString;
 
-   if(image->sGeoRef.defined)
-   {
-      return String::ToString("%d\t%d\t%d\t%.1f\t%.2f\t%.2f", 
-         image->getWidth(),
-         image->getHeight(),
-         image->getBytesPerPixel(),
-         image->sGeoRef.pixelResolX,
-         image->sGeoRef.minimum,
-         image->sGeoRef.maximum
-      );
-   }
+   if(!image->sGeoRef.defined)
+      return String::ToString("%d\t%d\t%d", image->getWidth(),
+                              image->getHeight(),
+                              image->getBytesPerPixel());
 
-   return String::ToString("%d\t%d\t%d", image->getWidth(),
+   String driver = String::ToString(image->sGeoRef.driver);
+   String projection = String::ToString(image->sGeoRef.projection);
+   String size = String::ToString(image->sGeoRef.size);
+
+   driver.replace(' ', '·');
+   projection.replace(' ', '·');
+
+   return String::ToString("%d\t%d\t%d\t%.1f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%s\t%s\t%s",
+      image->getWidth(),
       image->getHeight(),
-      image->getBytesPerPixel());
+      image->getBytesPerPixel(),
+      image->sGeoRef.pixelResolX,
+      image->sGeoRef.minimum,
+      image->sGeoRef.maximum,
+      image->sGeoRef.topLeftX,
+      image->sGeoRef.topLeftY,
+      image->sGeoRef.nXSize,
+      image->sGeoRef.nYSize,
+      size.c_str(),
+      driver.c_str(),
+      projection.c_str()
+   );
 }
