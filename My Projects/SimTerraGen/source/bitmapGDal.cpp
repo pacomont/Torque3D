@@ -278,7 +278,7 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
          preadDS->GetRasterXSize(), preadDS->GetRasterYSize(),
          preadDS->GetRasterCount());
 
-      sprintf_s(bitmap->sGeoRef.projection, 512, "%s",
+      sprintf_s(bitmap->sGeoRef.projection, 1024, "%s",
          preadDS->GetProjectionRef() == NULL ? "0" : preadDS->GetProjectionRef());
 
       GDALClose(preadDS);

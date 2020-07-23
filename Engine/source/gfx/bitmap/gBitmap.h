@@ -70,6 +70,9 @@ public:
       int   nYSize;
       double minimum;
       double maximum;
+      char driver[128];
+      char size[512];
+      char projection[1024];
    } sGeoRef;
 
    struct Registration
