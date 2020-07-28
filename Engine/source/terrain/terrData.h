@@ -44,7 +44,7 @@
 #ifndef _GFXPRIMITIVEBUFFER_H_
 #include "gfx/gfxPrimitiveBuffer.h"
 #endif
-
+#include <ogr_spatialref.h>
 
 
 class GBitmap;
@@ -190,9 +190,12 @@ protected:
 	/// Allows the terrain to cast shadows onto itself and other objects.
 	bool mCastShadows;
 
-   Point2F geo_topLeft; //GeoRef
    String projection;
+   String coordSys;
 
+   OGRSpatialReference oSourceSRS;
+   OGRSpatialReference oSourceGeogSRS;
+  
    /// A global LOD scale used to tweak the default
    /// terrain screen error value.
    static F32 smLODScale;
@@ -278,8 +281,8 @@ public:
 
    U32 getCRC() const { return(mCRC); }
 
-   Resource<TerrainFile> getFile() const { return mFile; };
-
+   Resource<TerrainFile> getFile() const { return mFile; }
+  
    bool onAdd();
    void onRemove();
 
@@ -457,6 +460,13 @@ public:
    void postLight(Vector<TerrainBlock *> &terrBlocks) {};
 
    bool setWKT(const char* wkt);
+
+   OGRSpatialReference* getSourceSRS() {
+      if (oSourceSRS.GetRoot() == NULL)
+         setWKT(projection);
+      return &oSourceSRS;
+   }
+   Point2F geo_topLeft; //GeoRef
 
    DECLARE_CONOBJECT(TerrainBlock);
    static void initPersistFields();

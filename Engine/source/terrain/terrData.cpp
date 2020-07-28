@@ -1258,6 +1258,8 @@ void TerrainBlock::unpackUpdate(NetConnection* con, BitStream *stream)
 
       mathRead(*stream, &geo_topLeft);
       stream->read(&projection);
+
+      setWKT(projection);
    }
 
    if ( stream->readFlag() ) // SizeMask
