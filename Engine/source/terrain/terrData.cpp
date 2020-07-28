@@ -1147,9 +1147,11 @@ void TerrainBlock::initPersistFields()
 
    addGroup("Georeference");
 
-   addField("projection", TypeRealString, Offset(projection, TerrainBlock), "Lop left position of the world (UTM).");
+   addField("coordSys", TypeRealString, Offset(coordSys, TerrainBlock), "OpenGIS Well Known coordinate systems.");
 
-   addField("topLeftUTM", TypePoint2F, Offset(geo_topLeft, TerrainBlock), "Lop left position of the world (UTM).");
+   addField("projection", TypeRealString, Offset(projection, TerrainBlock), "OpenGIS Well Known Text format for coordinate systems (WKT).");
+
+   addField("topLeftUTM", TypePoint2F, Offset(geo_topLeft, TerrainBlock), "Lop left position of the world (UTM) in projection WKT defined.");
 
    endGroup("Georeference");
 
@@ -1441,4 +1443,18 @@ DefineConsoleFunction( getTerrainHeightBelowPosition, F32, (const char* ptOrX, c
 	}
 	
 	return height;
+}
+
+
+DefineEngineMethod(TerrainBlock, SetWKT, bool, (const char* WKT), ,
+   "@brief Saves the terrain block's WKT .\n\n"
+
+   "@param WKT Wll Known Text.\n\n"
+
+   "@return True if WKT was successful, false otherwise")
+{
+   if (!String::isEmpty(WKT))
+      return static_cast<TerrainBlock*>(object)->setWKT(WKT);
+   else
+      return false;
 }
