@@ -54,6 +54,7 @@
 #ifndef _DYNAMIC_CONSOLETYPES_H_
 #include "console/dynamicTypes.h"
 #endif
+#include <ogr_spatialref.h>
 
 
 class SceneObject;
@@ -118,6 +119,8 @@ class WorldEditor : public EditTSCtrl
       void explodeSelectedPrefab();
 
       void makeSelectionAMesh(const char *filename);
+
+      void setSpatialReference(const char* name, const char* wKGeogCS, S32 zone, S32 north);
 
       //
       static SceneObject* getClientObj(SceneObject *);
@@ -314,6 +317,8 @@ class WorldEditor : public EditTSCtrl
       /// A large hard coded distance used to test 
       /// object and icon selection.
       static F32 smProjectDistance;
+
+      OGRSpatialReference oTargetSRS;
 
       S32               mDropType;
       bool              mBoundingBoxCollision;
