@@ -81,6 +81,11 @@ function WorldEditor::onMultiSelect( %this, %set )
       ETransformSelection.onSelectionChanged();
 }
 
+function WorldEditor::onMouseMoveCoord( %this, %terrain, %coord )
+{
+   EWorldEditorStatusBarCoord.setText(%coord);
+}
+
 function WorldEditor::onUnSelect( %this, %obj )
 {
    if ( isObject( %obj ) && %obj.isMethod( "onEditorUnselect" ) )
