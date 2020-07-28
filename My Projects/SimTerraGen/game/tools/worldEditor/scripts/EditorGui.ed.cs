@@ -411,6 +411,24 @@ function EditorGui::setDisplayType( %this, %type )
 
 //-----------------------------------------------------------------------------
 
+function EditorGui::setCRS( %this, %crs, %zone, %hemis, %index )
+{
+   %gui = %this.currentEditor.editorGui;
+   if( !isObject( %gui ) )
+      return;
+      
+   EWorldEditor.setSpatialReference(%crs, %crs, %zone, %hemis);
+
+   %this.currentCRS = %crs SPC %zone SPC %hemis SPC %index;
+   
+   if(%index == 12)
+      %crs = theTerrain.coordSys;
+            
+   EWorldEditorStatusBarSRS.setText(%crs SPC "/" SPC %zone @ ((%hemis==1)?"N":"S"));
+}
+
+//-----------------------------------------------------------------------------
+
 function EditorGui::setEditor( %this, %newEditor, %dontActivate )
 {
    if ( isObject( %this.currentEditor ) )

@@ -108,6 +108,56 @@ function EditorGui::buildMenus(%this)
       item[ 6 ] = "Perspective" TAB "Alt 1" TAB "EditorGuiStatusBar.setCamera(\"Standard Camera\");";
       item[ 7 ] = "Isometric" TAB "Alt 8" TAB "EditorGuiStatusBar.setCamera(\"Isometric View\");";
    };
+   
+/*
+EPSG:32628 (WGS84 / UTM zone 28N)
+EPSG:32629 (WGS84 / UTM zone 29N)
+EPSG:32630 (WGS84 / UTM zone 30N)
+EPSG:32631 (WGS84 / UTM zone 31N)
+EPSG:25828 (ETRS89 / UTM zone 28N)
+EPSG:25829 (ETRS89 / UTM zone 29N)
+EPSG:25830 (ETRS89 / UTM zone 30N)
+EPSG:25831 (ETRS89 / UTM zone 31N)
+EPSG:23028 (ED50 / UTM zone 28N)
+EPSG:23029 (ED50 / UTM zone 29N)
+EPSG:23030 (ED50 / UTM zone 30N)
+EPSG:23031 (ED50 / UTM zone 31N)
+*/   
+   
+   %this.datumMenu = new PopupMenu(DatumMenu)
+   {
+      superClass = "MenuBuilder";
+      
+      //ED50, WGS84 y ETRS89
+      item[0] = "WGS84 / UTM zone 28N" TAB "" TAB "EditorGui.setCRS(\"WGS84\", 28, 1, 0);";      
+      item[1] = "WGS84 / UTM zone 29N" TAB "" TAB "EditorGui.setCRS(\"WGS84\", 29, 1, 1);";      
+      item[2] = "WGS84 / UTM zone 30N" TAB "" TAB "EditorGui.setCRS(\"WGS84\", 30, 1, 2);";      
+      item[3] = "WGS84 / UTM zone 31N" TAB "" TAB "EditorGui.setCRS(\"WGS84\", 31, 1, 3);";      
+
+      item[4] = "ETRS89 / UTM zone 28N" TAB "" TAB "EditorGui.setCRS(\"ETRS89\", 28, 1, 4);";
+      item[5] = "ETRS89 / UTM zone 29N" TAB "" TAB "EditorGui.setCRS(\"ETRS89\", 29, 1, 5);";
+      item[6] = "ETRS89 / UTM zone 30N" TAB "" TAB "EditorGui.setCRS(\"ETRS89\", 30, 1, 6);";
+      item[7] = "ETRS89 / UTM zone 31N" TAB "" TAB "EditorGui.setCRS(\"ETRS89\", 31, 1, 7);";
+
+      item[8] = "ED50 / UTM zone 28N" TAB "" TAB "EditorGui.setCRS(\"ED50\", 28, 1, 8);";
+      item[9] = "ED50 / UTM zone 29N" TAB "" TAB "EditorGui.setCRS(\"ED50\", 29, 1, 9);";
+      item[10] = "ED50 / UTM zone 30N" TAB "" TAB "EditorGui.setCRS(\"ED50\", 30, 1, 10);";
+      item[11] = "ED50 / UTM zone 31N" TAB "" TAB "EditorGui.setCRS(\"ED50\", 31, 1, 11);";
+      
+      item[12] = "SRS Origen" TAB "" TAB "EditorGui.setCRS(\"ORIGEN\", -1, -1, 12);";
+ 
+   };
+   %this.coordMenu = new PopupMenu()
+   {
+      superClass = "MenuBuilder";
+      
+      //UTM, geogr�ficas, GEOREF y MGRS
+      item[0] = "Geograf" TAB "" TAB "EditorGui.setCoord(\"Geograf\");";
+      item[1] = "UTM" TAB "" TAB "EditorGui.setCoord(\"UTM\");";      
+      item[2] = "GEOREF" TAB "" TAB "EditorGui.setCoord(\"GEOREF\");";
+      item[3] = "MGRS" TAB "" TAB "EditorGui.setCoord(\"MGRS\");";
+   };
+
       
    // Menu bar
    %this.menuBar = new MenuBar(WorldEditorMenubar)
