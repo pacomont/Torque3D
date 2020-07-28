@@ -344,6 +344,22 @@ bool TerrainBlock::setFile( const FileName &terrFileName )
    return true;
 }
 
+bool TerrainBlock::setWKT(const char* wkt)
+{
+   projection = wkt;
+   oSourceSRS.Clear();
+   oSourceGeogSRS.Clear();
+   if (oSourceSRS.importFromWkt(wkt) != OGRERR_NONE)
+      return false;
+
+   coordSys = oSourceSRS.GetAttrValue(oSourceSRS.IsProjected() ? "PROJCS" : "GEOGCS");
+
+   oSourceSRS.CopyGeogCSFrom(&oSourceGeogSRS); // para mostrar coord geograficas
+
+   setMaskBits(FileMask | HeightMapChangeMask);
+   return true;
+}
+
 void TerrainBlock::setFile(const Resource<TerrainFile>& terr)
 {
    mFile = terr;
