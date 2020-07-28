@@ -1766,8 +1766,8 @@ void Camera::autoFitRadius( F32 radius, S32 displayType)
    F32 viewradius = (radius * 2.0f) / mTan(fov * 0.5f);
 
    // Be careful of infinite sized objects.  Clip to 64km
-   if(viewradius > 64000.0f)
-      viewradius = 64000.0f;
+   if(viewradius > 100000.0f)
+      viewradius = 100000.0f;
 
 //    if(displayType == 0) //DisplayTypeTop)
 //    {
@@ -1797,7 +1797,22 @@ void Camera::autoFitRadius( F32 radius, S32 displayType)
 
       mPosition = mEditOrbitPoint;
       _setPosition(mPosition, mRot);
-      if (displayType != 0)
+      if (displayType == 0)
+      {
+         //Point3F dir;
+         //mat->getColumn(1, &dir);
+
+         //Point3F startPos = getRenderPosition();
+         //Point3F endPos = startPos - dir * mCurrentEditOrbitDist;
+
+         Point3F pos;
+         pos.x = mEditOrbitPoint.x;
+         pos.y = mEditOrbitPoint.y;
+         pos.z = mCurrentEditOrbitDist + mEditOrbitPoint.z;
+
+         mObjToWorld.setColumn(3, pos);
+      }
+      else
          _calcEditOrbitPoint(&mObjToWorld, mRot);
    }
 }
