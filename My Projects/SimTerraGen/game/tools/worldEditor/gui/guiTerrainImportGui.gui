@@ -772,7 +772,7 @@ function TerrainImportGui::import( %this )
       %topLeftXY = %this-->topLeftUTM.getText();
       %projection = %this-->CoorRefSys.getText();    
    
-      %obj.projection = %projection;
+      %obj.SetWKT(%projection);
       %obj.topLeftUTM = %topLeftXY;
       
       if( %obj != %updated )
@@ -795,6 +795,10 @@ function TerrainImportGui::import( %this )
 
       ETerrainEditor.isDirty = true;
       EPainter.updateLayers();
+      
+      Inspector.inspect(%obj);
+      
+      EditorGui.setCRS("ORIGEN", -1, -1, 12);
    }
    else
    {
