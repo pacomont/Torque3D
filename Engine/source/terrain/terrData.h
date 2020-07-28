@@ -456,6 +456,7 @@ public:
 
    void postLight(Vector<TerrainBlock *> &terrBlocks) {};
 
+   bool setWKT(const char* wkt);
 
    DECLARE_CONOBJECT(TerrainBlock);
    static void initPersistFields();
