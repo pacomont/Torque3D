@@ -19,6 +19,11 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
+function execEditorGuiEd()
+{
+   echo(exec("./EditorGui.ed.cs"));
+}
+
 
 function EditorGui::init(%this)
 {
@@ -611,6 +616,10 @@ function EditorGui::onNewLevelLoaded( %this, %levelName )
    {
       parentGroup = "MissionCleanup";
    };
+   
+   %this.schedule(2000, "setCRS", "ORIGEN", -1, -1, 12);
+   
+   //%this.setCRS("ORIGEN", -1, -1, 12);
 }
 
 function EditorMissionCleanup::onRemove( %this )
