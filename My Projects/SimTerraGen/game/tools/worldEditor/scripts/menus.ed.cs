@@ -151,7 +151,7 @@ EPSG:23031 (ED50 / UTM zone 31N)
    {
       superClass = "MenuBuilder";
       
-      //UTM, geogrï¿½ficas, GEOREF y MGRS
+      //UTM, geográficas, GEOREF y MGRS
       item[0] = "Geograf" TAB "" TAB "EditorGui.setCoord(\"Geograf\");";
       item[1] = "UTM" TAB "" TAB "EditorGui.setCoord(\"UTM\");";      
       item[2] = "GEOREF" TAB "" TAB "EditorGui.setCoord(\"GEOREF\");";
@@ -329,6 +329,19 @@ EPSG:23031 (ED50 / UTM zone 31N)
       item[3] = "Make Selected a Mesh" TAB "" TAB "makeSelectedAMesh();";
    };
    %this.menuBar.insert(%toolsMenu, %this.menuBar.getCount());
+
+   // Gis Menu
+   %gisMenu = new PopupMenu(GisPopupMenu)
+   {
+      superClass = "MenuBuilder";
+      class = "EditorGisMenu";
+
+      barTitle = "GIS";
+
+      item[0] = "Datum:" TAB %this.datumMenu;      
+      item[1] = "Coord.Format:" TAB %this.coordMenu;
+   };
+   %this.menuBar.insert(%gisMenu, %this.menuBar.getCount());
       
    // Help Menu
    %helpMenu = new PopupMenu()
