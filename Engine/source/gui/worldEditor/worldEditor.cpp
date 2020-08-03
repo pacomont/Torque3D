@@ -1978,7 +1978,6 @@ void WorldEditor::on3DMouseMove(const Gui3DMouseEvent & event)
    if (mCoordinateMode == Geograf) //Geográficas
    {
       std::string os = p.GeoRepresentation(0);
-      //OGRSpatialReference* oSourceGeogSRS = tblock->getSourceGeogSRS();
       std::string dmsLat = DMS::Encode(p.Latitude(), 6, DMS::LATITUDE);
       std::string dmsLong = DMS::Encode(p.Longitude(), 6, DMS::LONGITUDE);
 
@@ -2026,7 +2025,6 @@ void WorldEditor::on3DMouseMove(const Gui3DMouseEvent & event)
          {
             Con::printf("%s", e.what());
          }
-         //OGRSpatialReference* oSourceGeogSRS = tblock->getSourceGeogSRS();
 
 
       }
