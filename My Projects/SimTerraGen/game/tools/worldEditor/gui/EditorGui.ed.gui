@@ -412,7 +412,7 @@
          anchorBottom = "0";
          anchorLeft = "1";
          anchorRight = "0";
-         position = "284 2";
+         position = "290 2";
          extent = "180 18";
          minExtent = "8 8";
          horizSizing = "left";
@@ -431,7 +431,7 @@
          Profile = "ToolsGuiDefaultProfile";
          HorizSizing = "left";
          VertSizing = "bottom";
-         position = "459 2";
+         position = "465 2";
          Extent = "2 18";
          MinExtent = "1 1";
          bitmap = "tools/gui/images/separator-h.png";
@@ -444,7 +444,7 @@
          Profile = "ToolsGuiTextProfile";
          HorizSizing = "left";
          VertSizing = "bottom";
-         Position = "469 2";
+         Position = "473 2";
          Extent = "180 18";
          MinExtent = "8 8";
          canSave = "1";
