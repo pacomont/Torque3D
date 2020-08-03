@@ -432,6 +432,41 @@ function EditorGui::setCRS( %this, %crs, %zone, %hemis, %index )
    EWorldEditorStatusBarSRS.setText(%crs SPC "/" SPC %zone @ ((%hemis==1)?"N":"S"));
 }
 
+/*
+      enum CoordinateTypes
+      {
+         Geograf,
+         UTM,
+         GEOREF,
+         MGRS
+      };
+*/
+
+function EditorGui::setCoord( %this, %coordinateMode )
+{
+   %gui = %this.currentEditor.editorGui;
+   if( !isObject( %gui ) )
+      return;
+      
+   switch$(%coordinateMode)
+   {
+      case "Geograf":
+         %index = 0;
+      case "UTM":
+         %index = 1;
+      case "GEOREF":
+         %index = 2;
+      case "MGRS":
+         %index = 3;   
+   }
+      
+   EWorldEditor.setCoordMode(%index);
+
+   %this.currentCoordMode = %coordinateMode;
+   
+   //EWorldEditorStatusBarSRS.setText(%crs SPC "/" SPC %zone @ ((%hemis==1)?"N":"S"));
+}
+
 //-----------------------------------------------------------------------------
 
 function EditorGui::setEditor( %this, %newEditor, %dontActivate )
