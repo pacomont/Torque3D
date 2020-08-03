@@ -50,6 +50,14 @@
 #include "T3D/tsStatic.h"
 #include "guiTerrPreviewCtrl.h"
 
+#include "GeographicLib/GeoCoords.hpp"
+#include <GeographicLib/DMS.hpp>
+#include <GeographicLib/Utility.hpp>
+#include <GeographicLib/MGRS.hpp>
+#include <GeographicLib/Georef.hpp>
+#include <iostream>
+
+using namespace GeographicLib;
 
 IMPLEMENT_CONOBJECT( WorldEditor );
 
@@ -1809,7 +1817,8 @@ WorldEditor::WorldEditor()
    
    mFadeIcons = true;
    mFadeIconsDist = 8.f;
-
+   mCoordinateMode = UTM;
+   mDontTransform = false;
 }
 
 WorldEditor::~WorldEditor()
@@ -1837,7 +1846,8 @@ bool WorldEditor::onAdd()
    //mGizmo->registerObject("WorldEditorGizmo");   
    mGizmo->assignName("WorldEditorGizmo");   
 
-   setSpatialReference("WGS84", "WGS84", -1, -1);
+   setSpatialReference("ORIGINAL", "", -1, -1);
+   setCoordMode(UTM);
 
    return true;
 }
@@ -1948,30 +1958,100 @@ void WorldEditor::on3DMouseMove(const Gui3DMouseEvent & event)
 
 
    OGRSpatialReference* oSourceSRS = tblock->getSourceSRS();
+   if(oSourceSRS == NULL)
+   {
+      Con::executef(this, "onMouseMoveCoord", ri.object->getName(), "oSourceSRS no definido!");
+      return;
+   }
    //oSourceSRS.SetWellKnownGeogCS("ED50");
    //oSourceSRS.SetUTM(30);
 
-
-   //proj.dll en D:\Downloads\Downloads\VS\vcpkg-master\packages\proj4_x64-windows\bin
-   OGRCoordinateTransformation* poCT = OGRCreateCoordinateTransformation(oSourceSRS,
-                                                                         &oTargetSRS);
    const F32 size = tblock->getSquareSize();
    double x = tblock->geo_topLeft.x + endPnt.x - size / 2.0f;
    double y = tblock->geo_topLeft.y + endPnt.y - size / 2.0f;
-   if (poCT == NULL || !poCT->Transform(1, &x, &y))
-      Con::errorf("Transformation failed.\n");
+
+   char buf[256];
+   S32 zone = oSourceSRS->GetUTMZone();
+   GeoCoords p(zone, true, x, y);
+
+
+   if (mCoordinateMode == Geograf) //Geográficas
+   {
+      std::string os = p.GeoRepresentation(0);
+      //OGRSpatialReference* oSourceGeogSRS = tblock->getSourceGeogSRS();
+      std::string dmsLat = DMS::Encode(p.Latitude(), 6, DMS::LATITUDE);
+      std::string dmsLong = DMS::Encode(p.Longitude(), 6, DMS::LONGITUDE);
+
+      dSprintf(buf, sizeof(buf), "Grf: %s, %s", dmsLat.c_str(), dmsLong.c_str());
+   }
    else
    {
-      Con::printf("(%f,%f) -> (%f,%f)\n",
-         endPnt.x,
-         endPnt.y,
-             x, y);
+      if (!mDontTransform)
+      {
+         //proj.dll en D:\Downloads\Downloads\VS\vcpkg-master\packages\proj4_x64-windows\bin
+         OGRCoordinateTransformation* poCT = OGRCreateCoordinateTransformation(oSourceSRS,
+            &oTargetSRS);
+
+         if (poCT == NULL || !poCT->Transform(1, &x, &y))
+            Con::errorf("Transformation failed.\n");
+         else
+         {
+            Con::printf("(%f,%f) -> (%f,%f)\n",
+               endPnt.x,
+               endPnt.y,
+               x, y);
+         }
+
+         try
+         {
+            zone = oTargetSRS.GetUTMZone();
+            p.Reset(zone, true, x, y);
+         }
+         catch (std::exception& e)
+         {
+            Con::printf("%s", e.what());
+         }
+      }
+
+      if (mCoordinateMode == UTM) //Geográficas
+      {
+
+         try
+         {
+            //const char* aa = os.c_str();
+            dSprintf(buf, sizeof(buf), "UTM: %s",
+               p.UTMUPSRepresentation().c_str());
+         }
+         catch (std::exception& e)
+         {
+            Con::printf("%s", e.what());
+         }
+         //OGRSpatialReference* oSourceGeogSRS = tblock->getSourceGeogSRS();
+
+
+      }
+      else if(mCoordinateMode == GEOREF)
+      {
+         std::string os;
+         Georef::Forward(p.Latitude(),
+            p.Longitude(),
+            5,
+            os
+         );
+
+         dSprintf(buf, sizeof(buf), "GEOREF: %s",
+            os.c_str());
+      }
+      else if (mCoordinateMode == MGRS)
+      {
+         std::string os = p.AltMGRSRepresentation();
+
+         dSprintf(buf, sizeof(buf), "MGRS: %s",
+            os.c_str());
+      }
+
    }
 
-   char buf[128];
-   dSprintf(buf, sizeof(buf), "%0.2f %0.2f",
-      x, y
-   );
    Con::executef(this, "onMouseMoveCoord", ri.object->getName(), buf);
 }
 
@@ -3805,10 +3885,19 @@ void WorldEditor::explodeSelectedPrefab()
 void WorldEditor::setSpatialReference(const char* name, const char* wKGeogCS, S32 zone, S32 north)
 {
    oTargetSRS.Clear();
+
+   mDontTransform = strcmp(name, "ORIGEN") == 0;
+
    OGRErr err = oTargetSRS.SetProjCS(name);
    err = oTargetSRS.SetWellKnownGeogCS(wKGeogCS);
    if(zone>0)
       oTargetSRS.SetUTM(zone, north);
+}
+
+void WorldEditor::setCoordMode(S32 coordinateMode)
+{
+   if (coordinateMode >= 0)
+      mCoordinateMode = coordinateMode;
 }
 
 void WorldEditor::makeSelectionAMesh(const char *filename)
@@ -3988,6 +4077,13 @@ DefineEngineMethod(WorldEditor, setSpatialReference, void, (const char* name, co
    "@param filename collada file to save the selected objects to.")
 {
    object->setSpatialReference(name, wKGeogCS, zone, north);
+}
+
+DefineEngineMethod(WorldEditor, setCoordMode, void, (S32 coordinateMode), ,
+   "Save selected objects to a .dae collada file and replace them in the level with a TSStatic object."
+   "@param filename collada file to save the selected objects to.")
+{
+   object->setCoordMode(coordinateMode);
 }
 
 DefineEngineMethod( WorldEditor, mountRelative, void, ( SceneObject *objA, SceneObject *objB ),,

@@ -121,6 +121,7 @@ class WorldEditor : public EditTSCtrl
       void makeSelectionAMesh(const char *filename);
 
       void setSpatialReference(const char* name, const char* wKGeogCS, S32 zone, S32 north);
+      void setCoordMode(S32 coordinateMode);
 
       //
       static SceneObject* getClientObj(SceneObject *);
@@ -314,9 +315,20 @@ class WorldEditor : public EditTSCtrl
          AlignNegZ
       };
 
+      enum CoordinateTypes
+      {
+         Geograf,
+         UTM,
+         GEOREF,
+         MGRS
+      };
+
       /// A large hard coded distance used to test 
       /// object and icon selection.
       static F32 smProjectDistance;
+
+      S32 mCoordinateMode;
+      bool mDontTransform;
 
       OGRSpatialReference oTargetSRS;
 
