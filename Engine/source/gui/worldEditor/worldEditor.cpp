@@ -1981,7 +1981,7 @@ void WorldEditor::on3DMouseMove(const Gui3DMouseEvent & event)
       std::string dmsLat = DMS::Encode(p.Latitude(), 6, DMS::LATITUDE);
       std::string dmsLong = DMS::Encode(p.Longitude(), 6, DMS::LONGITUDE);
 
-      dSprintf(buf, sizeof(buf), "Grf: %s, %s", dmsLat.c_str(), dmsLong.c_str());
+      dSprintf(buf, sizeof(buf), "%s, %s", dmsLat.c_str(), dmsLong.c_str());
    }
    else
    {
