@@ -1950,12 +1950,19 @@ void WorldEditor::on3DMouseMove(const Gui3DMouseEvent & event)
       return;
    }
 
-
+   
    endPnt = ri.point;
 
    TerrainBlock* tblock = reinterpret_cast<TerrainBlock*>(ri.object);
 
+   char buf[256];
 
+   if(tblock->geo_topLeft.x == 0 || tblock->geo_topLeft.y == 0)
+   {
+      dSprintf(buf, sizeof(buf), "%f, %f", endPnt.x, endPnt.y);
+      Con::executef(this, "onMouseMoveCoord", ri.object->getName(), buf);
+      return;
+   }
 
    OGRSpatialReference* oSourceSRS = tblock->getSourceSRS();
    if(oSourceSRS == NULL)
@@ -1964,13 +1971,13 @@ void WorldEditor::on3DMouseMove(const Gui3DMouseEvent & event)
       return;
    }
    //oSourceSRS.SetWellKnownGeogCS("ED50");
-   //oSourceSRS.SetUTM(30);
+   //oSourceSRS.SetUTM(30);   
 
    const F32 size = tblock->getSquareSize();
    double x = tblock->geo_topLeft.x + endPnt.x - size / 2.0f;
    double y = tblock->geo_topLeft.y + endPnt.y - size / 2.0f;
+ 
 
-   char buf[256];
    S32 zone = oSourceSRS->GetUTMZone();
    GeoCoords p(zone, true, x, y);
 
