@@ -179,7 +179,7 @@ DefineConsoleFunction(getBitmapInfo, String, (const char *filename), ,
    if (!image)
       return String::EmptyString;
 
-   if(!image->sGeoRef.defined)
+   if(!image->sGeoRef.defined || image->sGeoRef.topLeftX == 0)
       return String::ToString("%d\t%d\t%d", image->getWidth(),
                               image->getHeight(),
                               image->getBytesPerPixel());
