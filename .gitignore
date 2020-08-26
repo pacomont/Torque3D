@@ -183,3 +183,9 @@ console.log
 Project Manager.exe
 projects.xml
 Qt*.dll
+*.zip
+My Projects/SimTerraGen/game/levels/
+My Projects/SimTerraGen/game/art/terrains/
+My Projects/SimTerraGen/game/core/fonts/
+Engine/lib/gdal-2.4.4/
+Engine/lib/ERDAS ECW JPEG 2000 SDK 5.4.0/
