@@ -31,7 +31,7 @@ function initializeCore()
       return;
       
    // Core keybindings.
-   GlobalActionMap.bind(keyboard, tilde, toggleConsole);
+   GlobalActionMap.bind(keyboard, "tilde", toggleConsole);
    GlobalActionMap.bind(keyboard, "ctrl p", doScreenShot);
    GlobalActionMap.bindcmd(keyboard, "alt enter", "Canvas.attemptFullscreenToggle();","");
    GlobalActionMap.bindcmd(keyboard, "alt k", "cls();",  "");
