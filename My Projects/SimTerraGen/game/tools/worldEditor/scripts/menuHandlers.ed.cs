@@ -415,6 +415,124 @@ function EditorSaveMissionAs( %missionName )
    %savedTerrNames.delete();
 }
 
+
+function EditorExportToATF( %missionName )
+{
+   // If we didn't get passed a new mission name then
+   // prompt the user for one.
+   if ( %missionName $= "" )
+   {
+      %dlg = new SaveFileDialog()
+      {
+         Filters        = "adaptive Terrain Format (*.mis)|*.mis|All Files (*.*)|*.*|";
+         DefaultPath    = "export";
+         ChangePath     = false;
+         OverwritePrompt   = true;
+      };
+
+      %ret = %dlg.Execute();
+      if(%ret)
+      {
+         // Immediately override/set the levelsDirectory
+         EditorSettings.setValue( "export", collapseFilename(filePath( %dlg.FileName )) );
+         
+         %missionName = %dlg.FileName;
+      }
+      
+      %dlg.delete();
+      
+      if(! %ret)
+         return;
+   }
+               
+   if( fileExt( %missionName ) !$= ".mis" )
+      %missionName = %missionName @ ".mis";
+
+   EWorldEditor.isDirty = true;
+   %saveMissionFile = $Server::MissionFile;
+
+   $Server::MissionFile = %missionName;
+
+   %copyTerrainsFailed = false;
+
+   // Rename all the terrain files.  Save all previous names so we can
+   // reset them if saving fails.
+   %newMissionName = fileBase(%missionName);
+   %oldMissionName = fileBase(%saveMissionFile);
+   
+   initContainerTypeSearch( $TypeMasks::TerrainObjectType );
+   %savedTerrNames = new ScriptObject();
+   for( %i = 0;; %i ++ )
+   {
+      %terrainObject = containerSearchNext();
+      if( !%terrainObject )
+         break;
+
+      %savedTerrNames.array[ %i ] = %terrainObject.terrainFile;
+      
+      %terrainFilePath = makeRelativePath( filePath( %terrainObject.terrainFile ), getMainDotCsDir() );
+      %terrainFilePath = "export";
+      %terrainFileName = fileName( %terrainObject.terrainFile );
+               
+      // Workaround to have terrains created in an unsaved "New Level..." mission
+      // moved to the correct place.
+      
+      if( EditorGui.saveAs && %terrainFilePath $= "tools/art/terrains" )
+         %terrainFilePath = "art/terrains";
+      
+      // Try and follow the existing naming convention.
+      // If we can't, use systematic terrain file names.
+      if( strstr( %terrainFileName, %oldMissionName ) >= 0 )
+         %terrainFileName = strreplace( %terrainFileName, %oldMissionName, %newMissionName );
+      else
+         %terrainFileName = %newMissionName @ "_" @ %i @ ".ter";
+
+      %newTerrainFile = %terrainFilePath @ "/" @ %terrainFileName;
+
+      if (!isWriteableFileName(%newTerrainFile))
+      {
+         if (MessageBox("Error", "Terrain file \""@ %newTerrainFile @ "\" is read-only.  Continue?", "Ok", "Stop") == $MROk)
+            continue;
+         else
+         {
+            %copyTerrainsFailed = true;
+            break;
+         }
+      }
+      
+      if( !%terrainObject.save( %newTerrainFile ) )
+      {
+         error( "Failed to save '" @ %newTerrainFile @ "'" );
+         %copyTerrainsFailed = true;
+         break;
+      }
+      
+      %terrainObject.terrainFile = %newTerrainFile;
+   }
+
+   ETerrainEditor.isDirty = false;
+   
+   // Save the mission.
+   if(%copyTerrainsFailed || !EditorSaveMission())
+   {
+      // It failed, so restore the mission and terrain filenames.
+      
+      $Server::MissionFile = %saveMissionFile;
+
+      initContainerTypeSearch( $TypeMasks::TerrainObjectType );
+      for( %i = 0;; %i ++ )
+      {
+         %terrainObject = containerSearchNext();
+         if( !%terrainObject )
+            break;
+            
+         %terrainObject.terrainFile = %savedTerrNames.array[ %i ];
+      }
+   }
+   
+   %savedTerrNames.delete();
+}
+
 function EditorOpenMission(%filename)
 {
    if( EditorIsDirty())

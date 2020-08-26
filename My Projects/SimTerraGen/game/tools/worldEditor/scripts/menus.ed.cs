@@ -198,6 +198,10 @@ EPSG:23031 (ED50 / UTM zone 31N)
       //item[6] = "Import Texture Data..." TAB "" TAB "Texture::import();";
       //item[7] = "-";
       //item[8] = "Export Terraform Data..." TAB "" TAB "Heightfield::saveBitmap(\"\");";
+      
+   %fileMenu.appendItem( "-" );      
+   %fileMenu.appendItem("Export Terrain To .ATF" TAB "" TAB "EditorExportToATF();");
+   %fileMenu.appendItem("Import Terrain From .ATF" TAB "" TAB "EditorImportFromATF();");
    
    %fileMenu.appendItem( "-" );
    %fileMenu.appendItem( "Add FMOD Designer Audio..." TAB "" TAB "AddFMODProjectDlg.show();" );
