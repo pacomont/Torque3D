@@ -70,7 +70,8 @@ static struct _privateRegisterGDal
 
       //reg.extensions.push_back( "tiff" );
       reg.extensions.push_back("tif");
-      //reg.extensions.push_back( "terr" );
+      reg.extensions.push_back("jp2");
+      reg.extensions.push_back("ecw");
 
       reg.readFunc = sReadGDal;
       reg.writeFunc = sWriteDGal;
@@ -290,14 +291,14 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
    {  
       min = poBand->GetMinimum();
       max = poBand->GetMaximum();
-      //Carga TIFF imagen mediante trasformación a PNG
+      //Carga TIFF imagen mediante trasformación a BMP
       GDALDriver *poDriver;
       char **papszMetadata;
-      poDriver = GetGDALDriverManager()->GetDriverByName("PNG");
+      poDriver = GetGDALDriverManager()->GetDriverByName("BMP");
       if (poDriver == NULL)
          return false;
 
-      GDALDataset* pngDS = poDriver->CreateCopy("./dummy.png", preadDS, FALSE,
+      GDALDataset* pngDS = poDriver->CreateCopy("./dummy.bmp", preadDS, FALSE,
          NULL, NULL, NULL);
       /* Once we're done, close properly the dataset */
       /* Once we're done, close properly the dataset */
@@ -309,7 +310,7 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
 
       FileStream  streamPng;
 
-      streamPng.open("./dummy.png", Torque::FS::File::Read);
+      streamPng.open("./dummy.bmp", Torque::FS::File::Read);
 
       if (streamPng.getStatus() != Stream::Ok)
       {
@@ -319,7 +320,7 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
 
       //       GBitmap *bmp = new GBitmap;
 
-      if (!bitmap->readBitmap("png", streamPng))
+      if (!bitmap->readBitmap("bmp", streamPng))
       {
          //Con::errorf("Resource<GBitmap>::create - error reading '%s'", path.getFullPath().c_str());
          //delete bitmap;

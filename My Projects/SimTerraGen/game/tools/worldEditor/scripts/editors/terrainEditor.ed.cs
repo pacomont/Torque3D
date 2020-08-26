@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 /// The texture filename filter used with OpenFileDialog.
-$TerrainEditor::TextureFileSpec = "Image Files (*.png, *.jpg, *.dds)|*.png;*.jpg;*.dds|All Files (*.*)|*.*|";
+$TerrainEditor::TextureFileSpec = "Image Files (*.png, *.jpg, *.dds, *.jp2, *.ecw)|*.png;*.jpg;*.dds;*.jp2;*.ecw|All Files (*.*)|*.*|";
 
 function TerrainEditor::init( %this )
 {

@@ -877,8 +877,8 @@ function TerrainImportGui_SetHeightfield( %name )
    //Inspector.inspect(theLevelInfo);
 }
 
-$TerrainImportGui::HeightFieldFilter = "Heightfield Files (*.png, *.bmp, *.jpg, *.gif, *.tif)|*.png;*.bmp;*.jpg;*.gif;*.tif|All Files (*.*)|*.*|";
-$TerrainImportGui::OpacityMapFilter = "Opacity Map Files (*.png, *.bmp, *.jpg, *.gif)|*.png;*.bmp;*.jpg;*.gif|All Files (*.*)|*.*|";
+$TerrainImportGui::HeightFieldFilter = "Heightfield Files (*.png, *.bmp, *.jpg, *.gif, *.tif, *.jp2, *.ecw)|*.png;*.bmp;*.jpg;*.gif;*.tif;*.jp2;*.ecw|All Files (*.*)|*.*|";
+$TerrainImportGui::OpacityMapFilter = "Opacity Map Files (*.png, *.bmp, *.jpg, *.gif, *.jp2, *.ecw)|*.png;*.bmp;*.jpg;*.gif;*.jp2;*.ecw|All Files (*.*)|*.*|";
 
 function TerrainImportGui::browseForHeightfield( %this )
 {
