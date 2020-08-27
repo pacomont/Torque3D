@@ -531,6 +531,31 @@ function EditorExportToATF( %missionName )
    }
    
    %savedTerrNames.delete();
+
+   /////////////////////////////////////////////////////////////////////////////
+   // guardar ficheros en el zip   
+   /////////////////////////////////////////////////////////////////////////////
+   
+   %zip = new ZipObject();
+   if(!%zip.openArchive(%terrainFilePath @ "\\" @ fileBase( $Server::MissionFile) @ ".atf", "write"))
+	   return;   
+	   
+   %zip.addFile(%terrainFilePath @ "\\" @ "info.dat", %terrainFilePath @ "\\" @ "info.dat", false);
+   
+   if(%file.openForRead(%terrainFilePath @ "\\" @ "info.dat"))
+   {
+      while ( !%file.isEOF() )
+      {
+         %line = trim( %file.readLine() );   	      
+         %zip.addFile(%terrainFilePath @ "\\" @ %line, %terrainFilePath @ "\\" @ %line, false);
+         
+         fileDelete(%terrainFilePath @ "\\" @ %line);
+      }
+   }
+
+   %zip.closeArchive();
+   fileDelete(%terrainFilePath @ "\\" @ "info.dat");
+   return;
 }
 
 function EditorOpenMission(%filename)
