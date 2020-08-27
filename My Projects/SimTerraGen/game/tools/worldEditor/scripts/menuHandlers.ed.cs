@@ -424,7 +424,7 @@ function EditorExportToATF( %missionName )
    {
       %dlg = new SaveFileDialog()
       {
-         Filters        = "adaptive Terrain Format (*.mis)|*.mis|All Files (*.*)|*.*|";
+         Filters        = "adaptive Terrain Format (*.atf)|*.atf|All Files (*.*)|*.*|";
          DefaultPath    = "export";
          ChangePath     = false;
          OverwritePrompt   = true;
@@ -444,9 +444,8 @@ function EditorExportToATF( %missionName )
       if(! %ret)
          return;
    }
-               
-   if( fileExt( %missionName ) !$= ".mis" )
-      %missionName = %missionName @ ".mis";
+   
+   %missionName = fileBase(%missionName) @ ".mis";            
 
    EWorldEditor.isDirty = true;
    %saveMissionFile = $Server::MissionFile;
