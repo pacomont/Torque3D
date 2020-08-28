@@ -529,7 +529,44 @@ function EditorExportToATF( %missionName )
       }
    }
    
+   
    %savedTerrNames.delete();
+   
+   
+   /////////////////////////////////////////////////////////////////////////////
+   //Guardar texturas y basemap   
+   /////////////////////////////////////////////////////////////////////////////
+         
+   %terrainObj = %terrainId;
+   if ( !isObject( %terrainObj ) )
+   {
+      MessageBoxOK( "Export failed", "Could not find the selected TerrainBlock!" );
+      return;
+   }
+
+   %filePath = "export";
+
+   %terrainName = %terrainObj.getName();
+   if ( %terrainName $= "" )
+      %terrainName = "Unnamed";
+
+   %fileName = %terrainName @ "_heightmap.png";
+   %filePrefix = %terrainName @ "_layerMap";
+
+   %ret = %terrainObj.exportHeightMap( %filePath @ "/" @ %fileName, "png" );
+   if ( %ret )
+   {
+      %file.writeline(%fileName);
+      
+      %ret = %terrainObj.exportLayerMaps( %filePath @ "/" @ %filePrefix, "png" );
+      if ( %ret )
+      {
+         echo($exportedLayerMaps);
+         %file.writeline(fileName($exportedLayerMaps));
+      }
+   }
+   
+   %file.close();   
 
    /////////////////////////////////////////////////////////////////////////////
    // guardar ficheros en el zip   
