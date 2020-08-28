@@ -445,7 +445,7 @@ function EditorExportToATF( %missionName )
          return;
    }
    
-   %missionName = fileBase(%missionName) @ ".mis";            
+   %missionName = "export" @ "\\" @  fileBase(%missionName) @ ".mis";            
 
    EWorldEditor.isDirty = true;
    %saveMissionFile = $Server::MissionFile;
@@ -459,6 +459,20 @@ function EditorExportToATF( %missionName )
    %newMissionName = fileBase(%missionName);
    %oldMissionName = fileBase(%saveMissionFile);
    
+   //Crear fichero de configuración
+   %file = new FileObject();	
+	if(!%file.openForWrite("export" @ "\\" @ "info.dat"))
+	{	
+	   return;   
+	}
+	   
+   %file.writeline(trim(fileName( $Server::MissionFile)));
+   
+   
+   /////////////////////////////////////////////////////////////////////////////
+   //Guardar los terrenos (.ter)
+   /////////////////////////////////////////////////////////////////////////////   
+   
    initContainerTypeSearch( $TypeMasks::TerrainObjectType );
    %savedTerrNames = new ScriptObject();
    for( %i = 0;; %i ++ )
@@ -466,6 +480,13 @@ function EditorExportToATF( %missionName )
       %terrainObject = containerSearchNext();
       if( !%terrainObject )
          break;
+      
+      //guardamos el primer TerrainBlock
+      if(%i==0)
+      {
+         %terrainId = %terrainObject.getId();
+         %terrainName = %terrainObject.getName();
+      }
 
       %savedTerrNames.array[ %i ] = %terrainObject.terrainFile;
       
@@ -504,14 +525,18 @@ function EditorExportToATF( %missionName )
          error( "Failed to save '" @ %newTerrainFile @ "'" );
          %copyTerrainsFailed = true;
          break;
-      }
+      }         
       
       %terrainObject.terrainFile = %newTerrainFile;
+      
+      %file.writeline(trim(fileName(%newTerrainFile)));
    }
 
    ETerrainEditor.isDirty = false;
    
-   // Save the mission.
+   /////////////////////////////////////////////////////////////////////////////
+   //Guardar la misión (.mis)
+   /////////////////////////////////////////////////////////////////////////////   
    if(%copyTerrainsFailed || !EditorSaveMission())
    {
       // It failed, so restore the mission and terrain filenames.
