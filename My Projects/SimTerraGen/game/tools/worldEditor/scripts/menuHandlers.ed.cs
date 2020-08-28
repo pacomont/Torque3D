@@ -416,11 +416,11 @@ function EditorSaveMissionAs( %missionName )
 }
 
 
-function EditorExportToATF( %missionName )
+function EditorExportToATF( %atfFileName )
 {
    // If we didn't get passed a new mission name then
    // prompt the user for one.
-   if ( %missionName $= "" )
+   if ( %atfFileName $= "" )
    {
       %dlg = new SaveFileDialog()
       {
@@ -436,7 +436,7 @@ function EditorExportToATF( %missionName )
          // Immediately override/set the levelsDirectory
          EditorSettings.setValue( "export", collapseFilename(filePath( %dlg.FileName )) );
          
-         %missionName = %dlg.FileName;
+         %atfFileName = %dlg.FileName;
       }
       
       %dlg.delete();
@@ -445,18 +445,21 @@ function EditorExportToATF( %missionName )
          return;
    }
    
-   %missionName = "export" @ "\\" @  fileBase(%missionName) @ ".mis";            
+   if( fileExt( %atfFileName ) $= "" )
+      %atfFileName = %atfFileName @ ".atf";
+   
+   %exportMissionName = "export" @ "\\" @  fileBase(%atfFileName) @ ".mis";            
 
    EWorldEditor.isDirty = true;
    %saveMissionFile = $Server::MissionFile;
 
-   $Server::MissionFile = %missionName;
+   $Server::MissionFile = %exportMissionName;
 
    %copyTerrainsFailed = false;
 
    // Rename all the terrain files.  Save all previous names so we can
    // reset them if saving fails.
-   %newMissionName = fileBase(%missionName);
+   %newMissionName = fileBase(%exportMissionName);
    %oldMissionName = fileBase(%saveMissionFile);
    
    //Crear fichero de configuración
@@ -597,18 +600,18 @@ function EditorExportToATF( %missionName )
    // guardar ficheros en el zip   
    /////////////////////////////////////////////////////////////////////////////
    
-   %zip = new ZipObject();
-   if(!%zip.openArchive(%terrainFilePath @ "\\" @ fileBase( $Server::MissionFile) @ ".atf", "write"))
+   %zip = new ZipObject();    
+   if(!%zip.openArchive(%atfFileName, "write"))
 	   return;   
 	   
-   %zip.addFile(%terrainFilePath @ "\\" @ "info.dat", %terrainFilePath @ "\\" @ "info.dat", false);
+   %zip.addFile(%terrainFilePath @ "\\" @ "info.dat", "." @ "\\" @ "info.dat", false);
    
    if(%file.openForRead(%terrainFilePath @ "\\" @ "info.dat"))
    {
       while ( !%file.isEOF() )
       {
          %line = trim( %file.readLine() );   	      
-         %zip.addFile(%terrainFilePath @ "\\" @ %line, %terrainFilePath @ "\\" @ %line, false);
+         %zip.addFile(%terrainFilePath @ "\\" @ %line, "." @ "\\" @ %line, false);
          
          fileDelete(%terrainFilePath @ "\\" @ %line);
       }
