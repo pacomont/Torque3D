@@ -1458,3 +1458,36 @@ DefineEngineMethod(TerrainBlock, SetWKT, bool, (const char* WKT), ,
    else
       return false;
 }
+
+DefineConsoleMethod(TerrainBlock, getMaterialCount, S32, (), ,
+   "Returns the current material count.")
+{
+   return object->getMaterialCount();
+
+   return 0;
+}
+
+DefineConsoleMethod(TerrainBlock, getMaterials, const char *, (), , "() gets the list of current terrain materials.")
+{
+   char *ret = Con::getReturnBuffer(4096);
+   ret[0] = 0;
+   for (U32 i = 0; i < object->getMaterialCount(); i++)
+   {
+      dStrcat(ret, object->getMaterialName(i));
+      dStrcat(ret, "\n");
+   }
+
+   return ret;
+}
+
+DefineConsoleMethod(TerrainBlock, getMaterialName, const char*, (S32 index), , "( int index ) - Returns the name of the material at the given index.")
+{
+   if (index < 0 || index >= object->getMaterialCount())
+   {
+      Con::errorf("TerrainEditor::getMaterialName - index out of range!");
+      return "";
+   }
+
+   const char* name = object->getMaterialName(index);
+   return Con::getReturnBuffer(name);
+}
