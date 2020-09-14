@@ -218,6 +218,22 @@ bool GBitmap::sFindFiles( const Path &path, Vector<Path> *outFoundPaths )
    return outFoundPaths ? outFoundPaths->size() > 0 : false;
 }
 
+String GBitmap::findTexture(String inFileName)
+{
+   Torque::Path filePath(inFileName);
+
+   Vector<Torque::Path> foundPaths;
+
+   sFindFiles(filePath, &foundPaths);
+
+   if (foundPaths.size() > 0)
+   {
+      return Torque::Path(foundPaths[0]).getFullPath();
+   }
+
+   return String::EmptyString;
+}
+
 String GBitmap::sGetExtensionList()
 {
    String list;
@@ -1174,3 +1190,16 @@ Resource<GBitmap> GBitmap::_search(const Torque::Path &path)
    return Resource< GBitmap >( NULL );
 }
 
+DefineConsoleFunction(findTexture, const char*, (const char * baseName), ,
+   "( String findTexture )\n")
+{
+   String outName = GBitmap::findTexture(baseName);
+
+   if (outName.isEmpty())
+      return NULL;
+
+   char *buffer = Con::getReturnBuffer(outName.size());
+   dStrcpy(buffer, outName);
+
+   return buffer;
+}
