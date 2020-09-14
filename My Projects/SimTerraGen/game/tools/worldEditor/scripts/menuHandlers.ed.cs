@@ -19,6 +19,10 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
+function execMenuHandlers()
+{
+   echo(exec("./menuHandlers.ed.cs"));
+}
 
 $Pref::WorldEditor::FileSpec = "Torque Mission Files (*.mis)|*.mis|All Files (*.*)|*.*|";
 
@@ -567,11 +571,13 @@ function EditorExportToATF( %atfFileName )
    
    %savedTerrNames.delete();
    
+ 
    
    /////////////////////////////////////////////////////////////////////////////
    //Guardar texturas y basemap   
    /////////////////////////////////////////////////////////////////////////////
-         
+   
+   /////////////////////////////////////////////////////////////////////////////         
    %terrainObj = %terrainId;
    if ( !isObject( %terrainObj ) )
    {
@@ -579,12 +585,74 @@ function EditorExportToATF( %atfFileName )
       return;
    }
 
-   %filePath = "export";
-
    %terrainName = %terrainObj.getName();
    if ( %terrainName $= "" )
       %terrainName = "Unnamed";
+      
+   
 
+   //Guardar material terreno???
+
+   %filePath = "export";
+   
+   // Cannot delete this material if it is the only one left on the Terrain
+   /*if ( ( ETerrainEditor.getMaterialCount() == 1 ) &&
+        ( ETerrainEditor.getMaterialIndex( %this.activeMat.internalName ) != -1 ) )
+   {
+      MessageBoxOK( "Error", "Cannot delete this Material, it is the only " @
+         "Material still in use by the active Terrain." );
+      return;
+   }*/
+   
+   %mats = %terrainObj.getMaterials();
+
+   /*%matList = %this-->theMaterialList;
+   %matList.deleteAllObjects();
+   %listWidth = getWord( %matList.getExtent(), 0 );*/
+   
+
+   for( %i = 0; %i < getRecordCount( %mats ); %i++ )
+   {
+      %matInternalName = getRecord( %mats, %i );
+      %mat = TerrainMaterialSet.findObjectByInternalName( %matInternalName );
+
+      // Is there no material info for this slot?
+      if ( !isObject( %mat ) )
+         continue;
+   
+      //%mat.dump();   
+      
+      
+      //Copiar el difusemap al directorio art\\terrains; TODO: al cargar una textura desde fuera del entorno game copiarla a art\\terrains   
+      if(fileExt(%mat.diffuseMap) $= "")
+      {
+         %textureFile = findTexture(%mat.diffuseMap);
+         %newdifmapfile = fileName(%mat.diffuseMap) @ fileExt(%textureFile);
+      }
+      else
+      {
+         %textureFile = %mat.diffuseMap;
+         %newdifmapfile = fileName(%mat.diffuseMap);
+      }
+      
+      
+      
+      pathCopy(%textureFile, %filePath @ "\\" @ %newdifmapfile, false);
+      
+      //%mat.internalName = getUniqueInternalName( %matInternalName, TerrainMaterialSet, true );
+      %mat.diffuseMap = "art/terrains/" @ %newdifmapfile;
+      //%mat.setName(%mat.internalName);
+      
+      %mat.save(%filePath @ "\\" @ %mat.internalName @ ".cs");
+      %file.writeline(%mat.internalName @ ".cs");
+      
+      %file.writeline(%newdifmapfile);
+   }
+         
+
+
+
+/*
    %fileName = %terrainName @ "_heightmap.png";
    %filePrefix = %terrainName @ "_layerMap";
 
@@ -600,6 +668,9 @@ function EditorExportToATF( %atfFileName )
          %file.writeline(fileName($exportedLayerMaps));
       }
    }
+*/
+
+
    
    %file.close();   
 
@@ -618,7 +689,7 @@ function EditorExportToATF( %atfFileName )
       while ( !%file.isEOF() )
       {
          %line = trim( %file.readLine() );   	      
-         %zip.addFile(%terrainFilePath @ "\\" @ %line, "." @ "\\" @ %line, false);
+         %zip.addFile(%terrainFilePath @ "\\" @ %line, "." @ "\\" @ %line, false);  //"." @ "\\" @ 
          
          fileDelete(%terrainFilePath @ "\\" @ %line);
       }
