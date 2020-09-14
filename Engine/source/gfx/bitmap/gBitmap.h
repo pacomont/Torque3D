@@ -156,6 +156,8 @@ public:
    /// with the correct extension and return true.  Otherwise, return false.
    static bool sFindFiles( const Torque::Path &path, Vector<Torque::Path> *outFoundPaths );
 
+   static String findTexture(String inFileName);
+
    /// Returns a space separated string of all registered extensions.
    static String sGetExtensionList();
 
