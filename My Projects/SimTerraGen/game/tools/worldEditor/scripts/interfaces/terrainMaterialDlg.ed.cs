@@ -327,6 +327,8 @@ function TerrainMaterialDlg::newMat( %this, %matName )
    %matLibTree.buildVisibleTree( true );
    %item = %matLibTree.findItemByObjectId( %newMat );
    %matLibTree.selectItem( %item );   
+   
+   return %newMat;
 }
 
 //-----------------------------------------------------------------------------
