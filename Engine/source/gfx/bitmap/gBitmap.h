@@ -55,8 +55,9 @@ public:
    enum Constants
    {
       /// The maximum mipmap levels we support.  The current
-      /// value lets us support up to 4096 x 4096 images.
-      c_maxMipLevels = 13 
+      /// value lets us support up to 4096 x 4096 images. 
+      /// antes c_maxMipLevels = 14 (Probamos 16384 x 16384)
+      c_maxMipLevels = 16
    };
 
    struct GeoRef
