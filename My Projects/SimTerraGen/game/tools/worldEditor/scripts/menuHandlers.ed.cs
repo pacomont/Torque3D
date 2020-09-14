@@ -524,14 +524,20 @@ function EditorExportToATF( %atfFileName )
          }
       }
       
+      %terfile = "levels" @ "\\" @ fileName(%newTerrainFile);
+      pathCopy(%terrainObject.terrainFile, %terfile, false);
+      %terrainObject.terrainFile = %terfile;
+      pathCopy(%terfile, %newTerrainFile, false); // copia tambien a export para guardar en zip
+      
+      /*
       if( !%terrainObject.save( %newTerrainFile ) )
       {
          error( "Failed to save '" @ %newTerrainFile @ "'" );
          %copyTerrainsFailed = true;
          break;
       }         
+      */
       
-      %terrainObject.terrainFile = %newTerrainFile;
       
       %file.writeline(trim(fileName(%newTerrainFile)));
    }
