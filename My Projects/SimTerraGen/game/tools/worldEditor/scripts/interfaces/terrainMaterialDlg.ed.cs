@@ -634,7 +634,7 @@ function TerrainMaterialDlg::_selectTextureFileDialog( %this, %defaultFileName )
    if ( !%ret )
       return; 
       
-   %file = filePath(%file) @ "/" @ fileBase(%file);
+   %file = filePath(%file) @ "/" @ fileBase(%file) @ fileExt(%file);
       
    return %file;
 }
