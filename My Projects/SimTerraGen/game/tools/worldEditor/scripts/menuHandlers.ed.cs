@@ -700,6 +700,160 @@ function EditorExportToATF( %atfFileName )
    return;
 }
 
+function EditorImportFromATF(%atfFileName)
+{
+   if( EditorIsDirty())
+   {
+      // "EditorSaveBeforeLoad();", "getLoadFilename(\"*.mis\", \"EditorDoLoadMission\");"
+      if(MessageBox("Mission Modified", "Would you like to save changes to the current mission \"" @
+         $Server::MissionFile @ "\" before opening a new mission?", SaveDontSave, Question) == $MROk)
+      {
+         if(! EditorSaveMission())
+            return;
+      }
+   }
+
+   if(%atfFileName $= "")
+   {
+      %dlg = new OpenFileDialog()
+      {
+         Filters        = "Adaptive Terrain Format (*.atf)|*.atf|All Files (*.*)|*.*|";
+         DefaultPath    = "export";
+         ChangePath     = false;
+         MustExist      = true;
+      };
+            
+      %ret = %dlg.Execute();
+      if(%ret)
+      {
+         // Immediately override/set the levelsDirectory
+         EditorSettings.setValue( "export", collapseFilename(filePath( %dlg.FileName )) );
+         %atfFileName = %dlg.FileName;
+      }
+      
+      %dlg.delete();
+      
+      if(! %ret)
+         return;
+   }
+   
+   endMission();
+   
+   //carga fichero atf   
+   %zip = new ZipObject();    
+   if(!%zip.openArchive(%atfFileName, "read"))
+	   return;  
+   
+   //extaer en \export
+   %filePath = "export";
+   %filecount = %zip.getFileEntryCount();
+   for( %i = 0; %i<%filecount; %i++ )
+   {
+      %fileInfo = %zip.getFileEntry(%i);
+      %filename = fileName(%fileInfo.x);
+      if(!%zip.extractFile("." @ "\\" @ %filename,  %filePath @ "\\" @ %filename)) //con ./
+         %zip.extractFile(%filename,  %filePath @ "\\" @ %filename); // sin ./
+   }
+   
+   //Lectura de info.dat
+   %file = new FileObject();	
+	if(!%file.openForRead(%filePath @ "\\" @ "info.dat"))
+	   return;   
+	   
+   %filename = %file.readline(); // .mis file   
+   %fileTer = %file.readline();  // .ter file
+   %fileMaterial = %file.readline();
+   %fileTexture = %file.readline();
+   
+   %file.close(); 
+   fileDelete(%filePath @ "\\" @ "info.dat");
+   
+   //Guardar fichero .ter en levels
+   pathCopy(%filePath @ "\\" @ %fileTer, "levels" @ "\\" @ %fileTer, false);
+   
+   //Guardar fichero .mis en levels
+   pathCopy(%filePath @ "\\" @ %filename, "levels" @ "\\" @ %filename, false);
+   %filename = "levels" @ "\\" @ %filename;
+   
+   
+   //Guardar textura en art\terrains
+   %texture ="art/terrains" @ "/" @ %fileTexture;
+   pathCopy(%filePath @ "\\" @ %fileTexture, %texture, false);
+   
+   /*
+   //Carga el material del terreno y lo guarda en materials.cs
+   %matName = fileBase(%fileMaterial);
+   
+   // Si ya existe, los borramos
+   %oldmat = TerrainMaterialSet.findObjectByInternalName( %matName ); 
+   if(%oldmat !$= "")
+   {
+      //TerrainMaterialSet.remove( %oldmat );   
+      %oldmat.delete();
+   }
+
+   */
+   
+   //%newMat.internalName = %matName;
+      
+
+  	if(!%file.openForRead(%filePath @ "\\" @ %fileMaterial))
+	   return;   
+   //guradar el objeto TerrainMaterial en variable %linesread
+   %file.readline(); ////--- OBJECT WRITE BEGIN ---
+   %linesread = %file.readLine(); // new TerrainMaterial() {   
+   while ( !%file.isEOF() )
+   {
+      %line = %file.readLine();
+      %foobar = getSubStr( %line , 0 , 1);
+      if(%foobar !$= "/")
+         %linesread = %linesread SPC %line;
+   }
+   //--- OBJECT WRITE END ---   
+   %file.close(); 
+   
+   
+   //crear objeto TerrainMaterial se guarda id en %newMat
+   eval( "%newMat" SPC "=" SPC %linesread);   
+   
+   %newMat.setFileName( "art/terrains/materials.cs" );
+   %newMat.diffuseMap = %texture;
+   TerrainMaterialSet.add( %newMat );   
+   
+   if( !isObject( ETerrainMaterialPersistMan ) )
+      new PersistenceManager( ETerrainMaterialPersistMan );
+         
+   ETerrainMaterialPersistMan.setDirty( %newMat, "art/terrains/materials.cs" );
+   
+   ETerrainMaterialPersistMan.saveDirty();
+   
+   //ETerrainMaterialPersistMan.delete();   
+   
+   /*
+   %matCount = TerrainMaterialSet.getCount();
+   for( %i = 0; %i < %matCount; %i ++ )
+   {
+      %mat = TerrainMaterialSet.getObject( %i );
+      if( !isMemberOfClass( %mat.getClassName(), "TerrainMaterial" ) )
+         continue;   
+    
+      %mat.delete();     
+   }
+   TerrainMaterialSet.clear();
+   */
+   TerrainMaterialSet.deleteAllObjects();
+   
+   //reInitMaterials();   
+   //reloadCoreMaterials();
+   reloadMaterials();
+
+   //Continuar con la carga de la mision
+   echo("**************************************************");
+   EditorOpenMission(%filename);
+   
+
+}
+
 function EditorOpenMission(%filename)
 {
    if( EditorIsDirty())
