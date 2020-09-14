@@ -471,6 +471,7 @@ function EditorExportToATF( %atfFileName )
 	   
    %file.writeline(trim(fileName( $Server::MissionFile)));
    
+  
    
    /////////////////////////////////////////////////////////////////////////////
    //Guardar los terrenos (.ter)
@@ -493,7 +494,7 @@ function EditorExportToATF( %atfFileName )
 
       %savedTerrNames.array[ %i ] = %terrainObject.terrainFile;
       
-      %terrainFilePath = makeRelativePath( filePath( %terrainObject.terrainFile ), getMainDotCsDir() );
+      //%terrainFilePath = makeRelativePath( filePath( %terrainObject.terrainFile ), getMainDotCsDir() );
       %terrainFilePath = "export";
       %terrainFileName = fileName( %terrainObject.terrainFile );
                
