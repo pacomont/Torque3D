@@ -271,3 +271,10 @@ function ChooseLevelDlgGoBtn::onMouseUp( %this )
       StartLevel(); 
    }
 }
+
+function LaunchEditor(%mission)
+{
+      activatePackage( "BootEditor" );
+      //ChooseLevelDlg.launchInEditor = false; 
+      StartLevel(%mission, "SinglePlayer");     
+}

@@ -128,7 +128,8 @@
          profile = "GuiMenuButtonProfile";
          visible = "1";
          active = "1";
-         command = "toggleEditor(1);";
+         command = "LaunchEditor(\"levels/Empty Level.mis\");";
+         //command = "toggleEditor(1);";
          tooltipProfile = "GuiToolTipProfile";
          tooltip = "The World Editor is accessible in-game by pressing F11";
          hovertime = "1000";
