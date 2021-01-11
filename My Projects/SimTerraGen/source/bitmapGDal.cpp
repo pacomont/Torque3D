@@ -23,6 +23,7 @@
 //Compilador en D:\ACART\2020\Downloads\gdal-2.4.4
 
 #include "./gcore/gdal_priv.h"
+#include "./alg/gdalwarper.h"
 #include <stdexcept>
 #include <sstream>
 #include <iostream>
@@ -172,6 +173,69 @@ static void GetGeoRef(GBitmap * bitmap, double * adfGeoTransform, int nXSize, in
    bitmap->sGeoRef.defined = true;
 }
 
+static void resample(GDALDatasetH srcDataset,
+   //char* srcfname, // low-res 1-band Geotiff filename (i.e. NIR, Red, Green, Blue)
+   char* dstfname,  // high-res (pan) Geotiff filename
+   S32 dstncols,
+   S32 dstnrows
+) {
+
+   //GDALAllRegister();
+   //GDALDatasetH srcDataset;
+   const char* srcProjection;
+
+   /* open up low-resolution Geotiff file dataset */
+   //srcDataset = GDALOpen(srcfname, GA_ReadOnly);
+   CPLAssert(srcDataset != NULL);
+
+   S32 srcXSize = GDALGetRasterXSize(srcDataset);
+   S32 srcYSize = GDALGetRasterYSize(srcDataset);
+
+   /* read projection from low-res. Geotiff. Also read its
+   * data-type. For LANDSAT8 its unsigned int16.
+   */
+
+   srcProjection = GDALGetProjectionRef(srcDataset);
+   CPLAssert(srcProjection != NULL && strlen(srcProjection) > 0);
+   GDALDataType sourceDatatype;
+   sourceDatatype = GDALGetRasterDataType(GDALGetRasterBand(srcDataset, 1));
+
+   double dstGeotransform[6];
+   GDALGetGeoTransform(srcDataset, dstGeotransform);
+
+   GDALDriverH outHandleDriver;
+   GDALDatasetH outDataset;
+
+   /* create output dataset. This will have the same dimensions
+   * as the input high-resolution Geotiff datasat (i.e. a 1-band Geotiff file
+   * holding a panchromatic band). This output dataset will also inherit
+   * its geotransform and projection string from this input high-res. dataset.
+   */
+
+   outHandleDriver = GDALGetDriverByName("GTiff");
+   outDataset = GDALCreate(outHandleDriver,
+      dstfname,
+      dstncols, dstnrows, 1,
+      sourceDatatype, NULL);
+    GDALSetProjection(outDataset, srcProjection);   
+    dstGeotransform[1] -= (F64)dstncols / (F64)srcXSize; //pixelResolX = 
+   if(dstGeotransform[5]<0)
+      dstGeotransform[5] += (F64)dstnrows / (F64)srcYSize; //pixelResolY = 
+   else
+      dstGeotransform[5] -= (F64)dstnrows / (F64)srcYSize; //pixelResolY = 
+    GDALSetGeoTransform(outDataset, dstGeotransform);
+//    GDALWarpOptions *options;
+
+   CPLErr eErr = GDALReprojectImage(srcDataset,
+                                    srcProjection,
+                                    outDataset,
+                                    srcProjection,
+                                    GRA_Cubic, 0.0, 0.0, NULL, NULL, NULL);
+   // alternatively: GRA_Cubic, 0.0, 0.0, GDALTermProgress, NULL, NULL);
+   CPLAssert(eErr == CE_None);
+   GDALClose(outDataset); /* this line is important. Close output dataset! */
+}
+
 //--------------------------------------
 static bool sReadGDal(Stream &stream, GBitmap *bitmap)
 {
@@ -189,6 +253,44 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
    String file = (path.getRoot().compare("game", 0) == 0) ? path.getFullPathWithoutRoot() : path.getFullPath();
 
    Platform::makeFullPathName(file, inFileName, 4096);
+
+   if(path.getExtension().equal("tif"))
+   {
+      GDALDataset *preadDS = (GDALDataset *)GDALOpen(inFileName, GA_ReadOnly);
+      if (preadDS == NULL)
+         return false;
+
+
+      GDALRasterBand *poBand = preadDS->GetRasterBand(1);
+
+      int   nXSize = poBand->GetXSize();
+      int   nYSize = poBand->GetYSize();
+
+      if (isPow2(nXSize) && isPow2(nYSize))
+         GDALClose(preadDS);
+      else
+      {
+         int nXSizePow = getNextPow2(nXSize);
+         int nYSizePow = nXSizePow;
+
+         resample(preadDS, "./dummy.tif", nXSizePow, nYSizePow);
+         GDALClose(preadDS);
+
+         return false;
+
+//          char qualifiedFromFile[2048];
+//          char qualifiedToFile[2048];
+// 
+//          Platform::makeFullPathName("./dummy.tif", qualifiedFromFile, sizeof(qualifiedFromFile));
+//          Platform::makeFullPathName(inFileName, qualifiedToFile, sizeof(qualifiedToFile));
+// 
+//          if (!dPathCopy(qualifiedFromFile, qualifiedToFile, false))
+//          {
+//             // Failed to copy module.
+//             Con::warnf("Failed to copy file located at '%s' to location '%s'.  The files may now be corrupted.", qualifiedFromFile, qualifiedToFile);
+//          }
+      }
+   }
 
    GDALDataset *preadDS = (GDALDataset *)GDALOpen(inFileName, GA_ReadOnly);
    if (preadDS == NULL)
@@ -287,6 +389,64 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
       // We know TIFF's don't have any transparency
       bitmap->setHasTransparency(false);
    } 
+   else if (nRasterCount == 1 && gddt == GDT_Int16)
+   {
+      // actually allocate the bitmap space...
+      bitmap->allocateBitmap(nXSize, nYSize,
+         false,            // don't extrude miplevels...
+         GFXFormatR5G5B5A1);          // use 16bit format...
+
+      S16 *pafScanline = static_cast<S16 *>(CPLMalloc(sizeof(S16) * nXSize));
+
+      for (int i = 0; i < nYSize; i++)
+      {
+         poBand->RasterIO(GF_Read, 0, i, nXSize, 1,
+            pafScanline, nXSize, 1, GDT_Int16,
+            0, 0);
+
+         U8 *rowDest = bitmap->getAddress(0, i);
+
+         for (S32 j = 0; j < nXSize; j++)
+         {
+            U16 * pixelLocation = reinterpret_cast<U16 *>(&rowDest[j * 2]);
+            F32 height = (F32)pafScanline[j];
+
+            if (height > 50000 || height < -20000)
+            {
+               pixelLocation[0] = floatToFixed(0.0f);
+            }
+            else
+            {
+               min = getMin(min, height);
+               max = getMax(max, height);
+
+               pixelLocation[0] = floatToFixed(height);
+            }
+
+         }
+         
+      }
+
+      CPLFree(pafScanline);
+
+      GetGeoRef(bitmap, adfGeoTransform, nXSize, nYSize, min, max);
+
+      sprintf_s(bitmap->sGeoRef.driver, 128, "%s/t%s",
+         preadDS->GetDriver()->GetDescription(),
+         preadDS->GetDriver()->GetMetadataItem(GDAL_DMD_LONGNAME));
+
+      sprintf_s(bitmap->sGeoRef.size, 512, "%d %d %d",
+         preadDS->GetRasterXSize(), preadDS->GetRasterYSize(),
+         preadDS->GetRasterCount());
+
+      sprintf_s(bitmap->sGeoRef.projection, 1024, "%s",
+         preadDS->GetProjectionRef() == NULL ? "0" : preadDS->GetProjectionRef());
+
+      GDALClose(preadDS);
+
+      // We know TIFF's don't have any transparency
+      bitmap->setHasTransparency(false);
+   }
    else
    {  
       min = poBand->GetMinimum();
@@ -297,9 +457,15 @@ static bool sReadGDal(Stream &stream, GBitmap *bitmap)
       poDriver = GetGDALDriverManager()->GetDriverByName("BMP");
       if (poDriver == NULL)
          return false;
+      
+//       int   nXSizePow = getNextPow2(nXSize);
+//       int   nYSizePow = nXSizePow;
+
+      //resample(preadDS, "./dummy.bmp", nXSizePow, nYSizePow);
 
       GDALDataset* pngDS = poDriver->CreateCopy("./dummy.bmp", preadDS, FALSE,
          NULL, NULL, NULL);
+
       /* Once we're done, close properly the dataset */
       /* Once we're done, close properly the dataset */
       if (preadDS != NULL)
