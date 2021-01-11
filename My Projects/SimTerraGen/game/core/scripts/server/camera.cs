@@ -22,7 +22,7 @@
 
 // Global movement speed that affects all cameras.  This should be moved
 // into the camera datablock.
-$Camera::movementSpeed = 30;
+$Camera::movementSpeed = 100;
 
 function Observer::onTrigger(%this,%obj,%trigger,%state)
 {

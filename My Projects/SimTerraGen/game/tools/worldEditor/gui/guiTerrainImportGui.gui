@@ -673,7 +673,7 @@
          tooltipProfile = "GuiToolTipProfile";
          hovertime = "1000";
          isContainer = "1";
-         internalName = "topLeftUTM";
+         internalName = "TopLeftUTM";
          canSave = "1";
          canSaveDynamicFields = "0";
       };
@@ -750,8 +750,14 @@ function TerrainImportGui::import( %this )
       %opacityNames = %opacityNames @ %opacityName TAB %channel @ "\n";
       %materialNames = %materialNames @ %materialName @ "\n";
    }
-
+   
    %updated = nameToID( %terrainName );
+   
+   %topLeftXY = %this-->TopLeftUTM.text; 
+   %projection = %this-->CoorRefSys.getText();    
+   
+   Canvas.popDialog( %this );
+
 
    // This will update an existing terrain with the name %terrainName,
    // or create a new one if %terrainName isn't a TerrainBlock
@@ -763,15 +769,9 @@ function TerrainImportGui::import( %this )
                                   %materialNames,
                                   %flipYAxis );
                                   
-   %obj.baseTexSize = $terrainWidth;
-
-   Canvas.popDialog( %this );
-
    if ( isObject( %obj ) )
-   {
-      %topLeftXY = %this-->topLeftUTM.getText();
-      %projection = %this-->CoorRefSys.getText();    
-   
+   {   
+      %obj.baseTexSize = $terrainWidth;   
       %obj.SetWKT(%projection);
       %obj.topLeftUTM = %topLeftXY;
       
@@ -846,6 +846,11 @@ function TerrainImportGui_SetHeightfield( %name )
    TerrainImportGui-->HeightfieldFilename.setText( %name );
    
    %bitmapInfo = getBitmapInfo( %name );
+   if(%bitmatInfo $= "")
+   {
+      pathCopy("./dummy.tif", %name, false);
+      %bitmapInfo = getBitmapInfo( %name );
+   }
    
    %width = getWord( %bitmapInfo, 0 );
    TerrainImportGui-->PixelsWidth.setText( %width );   
@@ -868,7 +873,7 @@ function TerrainImportGui_SetHeightfield( %name )
    %topLeftX = getWord( %bitmapInfo, 6 );
    %topLeftY = getWord( %bitmapInfo, 7 );
    
-   TerrainImportGui-->topLeftUTM.setText( %topLeftX SPC %topLeftY );
+   TerrainImportGui-->TopLeftUTM.setText( %topLeftX SPC %topLeftY );
    
    %projection = getWord( %bitmapInfo, 14 );
    %projection = unpacketString(%projection);

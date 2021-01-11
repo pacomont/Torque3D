@@ -124,7 +124,7 @@ EPSG:23030 (ED50 / UTM zone 30N)
 EPSG:23031 (ED50 / UTM zone 31N)
 */   
    
-   %this.datumMenu = new PopupMenu(DatumMenu)
+   %this.datumMenu = new PopupMenu()
    {
       superClass = "MenuBuilder";
       
@@ -200,8 +200,8 @@ EPSG:23031 (ED50 / UTM zone 31N)
       //item[8] = "Export Terraform Data..." TAB "" TAB "Heightfield::saveBitmap(\"\");";
       
    %fileMenu.appendItem( "-" );      
-   %fileMenu.appendItem("Export Terrain To .ATF" TAB "" TAB "EditorExportToATF();");
    %fileMenu.appendItem("Import Terrain From .ATF" TAB "" TAB "EditorImportFromATF();");
+   %fileMenu.appendItem("Export Terrain To .ATF" TAB "" TAB "EditorExportToATF();");
    
    %fileMenu.appendItem( "-" );
    %fileMenu.appendItem( "Add FMOD Designer Audio..." TAB "" TAB "AddFMODProjectDlg.show();" );

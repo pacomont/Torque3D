@@ -638,6 +638,7 @@ function EditorExportToATF( %atfFileName )
       
       
       pathCopy(%textureFile, %filePath @ "\\" @ %newdifmapfile, false);
+      pathCopy(%textureFile, "art/terrains/" @ %newdifmapfile, false);
       
       //%mat.internalName = getUniqueInternalName( %matInternalName, TerrainMaterialSet, true );
       %mat.diffuseMap = "art/terrains/" @ %newdifmapfile;

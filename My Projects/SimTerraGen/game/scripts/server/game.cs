@@ -46,7 +46,7 @@ $Game::DefaultCameraDataBlock = "Observer";
 $Game::DefaultCameraSpawnGroups = "CameraSpawnPoints PlayerSpawnPoints PlayerDropPoints";
 
 // Global movement speed that affects all Cameras
-$Camera::MovementSpeed = 30;
+$Camera::MovementSpeed = 100;
 
 //-----------------------------------------------------------------------------
 // GameConnection manages the communication between the server's world and the

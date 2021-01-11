@@ -7,15 +7,25 @@ new SimGroup(MissionGroup) {
       musicTrack = "lush";
 
    new LevelInfo(theLevelInfo) {
-      visibleDistance = "1000";
+      nearClip = "10";
+      visibleDistance = "100000";
+      visibleGhostDistance = "0";
+      decalBias = "0.0015";
       fogColor = "0.6 0.6 0.7 1";
       fogDensity = "0";
       fogDensityOffset = "700";
       fogAtmosphereHeight = "0";
-      canvasClearColor = "0 0 0 255";
-         canSaveDynamicFields = "1";
-         levelName = "Blank Room";
-         desc0 = "A blank room ready to be populated with Torque objects.\n\nGuns, anyone?";
+      canvasClearColor = "76 227 254 255";
+      ambientLightBlendPhase = "1";
+      ambientLightBlendCurve = "0 0 -1 -1";
+      advancedLightmapSupport = "0";
+      soundAmbience = "AudioAmbienceDefault";
+      soundDistanceModel = "Linear";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+         desc0 = "An empty room ready to be populated with Torque objects.";
+         enabled = "1";
+         levelName = "Empty Room";
          Enabled = "1";
    };
    new SkyBox(theSky) {
@@ -77,17 +87,6 @@ new SimGroup(MissionGroup) {
             homingCount = "0";
             lockCount = "0";
       };
-   };
-   new GroundPlane() {
-      canSaveDynamicFields = "1";
-      Position = "0 0 0";
-      rotation = "1 0 0 0";
-      scale = "1 1 1";
-      squareSize = "128";
-      scaleU = "12";
-      scaleV = "12";
-      Material = "BlankWhite";
-         Enabled = "1";
    };
 };
 //--- OBJECT WRITE END ---

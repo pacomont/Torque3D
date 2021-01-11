@@ -144,7 +144,9 @@ function StartupGui::onDone(%this)
          //BlankGui.delete();
          //flushTextureCache();
          
-         loadMainMenu();
+         //loadMainMenu();
+         
+         LaunchEditor("levels/Empty Level.mis");
       }
       else
       {
