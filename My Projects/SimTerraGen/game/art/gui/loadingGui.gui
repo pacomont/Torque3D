@@ -56,7 +56,7 @@
          Profile = "GuiProgressBitmapProfile";
          HorizSizing = "center";
          VertSizing = "bottom";
-         Position = "17 126";
+         Position = "17 146";
          Extent = "464 24";
          MinExtent = "8 2";
          canSave = "1";
