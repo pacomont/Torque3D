@@ -2,10 +2,142 @@
 <Address>127.0.0.1</Address>
 <Password>password</Password>
 <Port>6060</Port>
-<LastConfig>Debug</LastConfig>
-<Breakpoints/>
-<Bookmarks/>
+<LastConfig>Release</LastConfig>
+<Breakpoints>
+<Breakpoint>
+<File>tools\worldEditor\gui\guiTerrainImportGui.gui</File>
+<Line>823</Line>
+<Pass>0</Pass>
+<Condition/>
+<Enabled/>
+</Breakpoint>
+<Breakpoint>
+<File>tools\worldEditor\scripts\EditorGui.ed.cs</File>
+<Line>1805</Line>
+<Pass>0</Pass>
+<Condition/>
+<Enabled/>
+</Breakpoint>
+<Breakpoint>
+<File>tools\guiEditor\scripts\guiEditorCanvas.ed.cs</File>
+<Line>53</Line>
+<Pass>0</Pass>
+<Condition/>
+<Enabled/>
+</Breakpoint>
+<Breakpoint>
+<File>tools\editorClasses\scripts\guiFormClass.ed.cs</File>
+<Line>595</Line>
+<Pass>0</Pass>
+<Condition/>
+<Enabled/>
+</Breakpoint>
+<Breakpoint>
+<File>tools\worldEditor\scripts\interfaces\terrainMaterialDlg.ed.cs</File>
+<Line>189</Line>
+<Pass>0</Pass>
+<Condition/>
+<Enabled/>
+</Breakpoint>
+<Breakpoint>
+<File>tools\worldEditor\scripts\interfaces\terrainMaterialDlg.ed.cs</File>
+<Line>532</Line>
+<Pass>0</Pass>
+<Condition/>
+<Enabled/>
+</Breakpoint>
+</Breakpoints>
+<Bookmarks>
+<Bookmark>
+<File>tools\worldEditor\scripts\EditorGui.ed.cs</File>
+<Line>421</Line>
+</Bookmark>
+<Bookmark>
+<File>tools\worldEditor\scripts\menus.ed.cs</File>
+<Line>126</Line>
+</Bookmark>
+<Bookmark>
+<File>tools\worldEditor\scripts\menus.ed.cs</File>
+<Line>344</Line>
+</Bookmark>
+<Bookmark>
+<File>tools\worldEditor\gui\guiTerrainImportGui.gui</File>
+<Line>800</Line>
+</Bookmark>
+</Bookmarks>
 <OpenFiles>
-<File ScrollX="0" ScrollY="138" Active="true">main.cs</File>
+<File ScrollX="0" ScrollY="232">main.cs</File>
+<File ScrollX="0" ScrollY="240">tools\worldEditor\gui\EditorGui.ed.gui</File>
+<File ScrollX="0" ScrollY="284">tools\worldEditor\gui\guiCreateNewTerrainGui.gui</File>
+<File ScrollX="0" ScrollY="850" Active="true">tools\worldEditor\gui\guiTerrainImportGui.gui</File>
+<File ScrollX="0" ScrollY="18">tools\worldEditor\scripts\editors\terrainEditor.ed.cs</File>
+<File ScrollX="0" ScrollY="224">tools\worldEditor\gui\guiTerrainExportGui.gui</File>
+<File ScrollX="0" ScrollY="134">tools\worldEditor\gui\guiTerrainMaterialDlg.ed.gui</File>
+<File ScrollX="0" ScrollY="663">tools\gui\materialSelector.ed.gui</File>
+<File ScrollX="0" ScrollY="210">tools\worldEditor\scripts\interfaces\terrainMaterialDlg.ed.cs</File>
+<File ScrollX="0" ScrollY="4">art\terrains\materials.cs</File>
+<File ScrollX="0" ScrollY="265">scripts\gui\chooseLevelDlg.cs</File>
+<File ScrollX="0" ScrollY="0">tools\levels\BlankRoom.mis</File>
+<File ScrollX="0" ScrollY="42">core\scripts\server\levelInfo.cs</File>
+<File ScrollX="0" ScrollY="179">tools\worldEditor\scripts\menus.ed.cs</File>
+<File ScrollX="0" ScrollY="887">tools\guiEditor\scripts\guiEditor.ed.cs</File>
+<File ScrollX="0" ScrollY="583">tools\worldEditor\scripts\menuHandlers.ed.cs</File>
+<File ScrollX="0" ScrollY="132">tools\worldEditor\scripts\editorPrefs.ed.cs</File>
+<File ScrollX="0" ScrollY="0">tools\worldEditor\gui\WorldEditorToolbar.ed.gui</File>
+<File ScrollX="0" ScrollY="175">core\scripts\server\commands.cs</File>
+<File ScrollX="0" ScrollY="462">tools\worldEditor\scripts\EditorGui.ed.cs</File>
+<File ScrollX="0" ScrollY="51">tools\worldEditor\scripts\editors\worldEditor.ed.cs</File>
+<File ScrollX="0" ScrollY="153">tools\guiEditor\scripts\guiEditorTreeView.ed.cs</File>
+<File ScrollX="0" ScrollY="5">tools\guiEditor\scripts\guiEditorInspector.ed.cs</File>
+<File ScrollX="0" ScrollY="35">tools\guiEditor\scripts\guiEditorContentList.ed.cs</File>
+<File ScrollX="0" ScrollY="20">tools\guiEditor\scripts\guiEditorSelectDlg.ed.cs</File>
+<File ScrollX="0" ScrollY="186">tools\worldEditor\scripts\transformSelection.ed.cs</File>
+<File ScrollX="0" ScrollY="108">core\art\gui\console.gui</File>
+<File ScrollX="0" ScrollY="27">core\scripts\server\clientConnection.cs</File>
+<File ScrollX="0" ScrollY="107">core\scripts\server\missionLoad.cs</File>
+<File ScrollX="0" ScrollY="219">art\gui\optionsDlg.gui</File>
+<File ScrollX="0" ScrollY="21">art\gui\playGui.gui</File>
+<File ScrollX="0" ScrollY="3">core\scripts\gui\messageBoxes\messageBoxOkCancel.ed.gui</File>
+<File ScrollX="0" ScrollY="131">tools\worldEditor\gui\EditorChooseLevelGui.ed.gui</File>
+<File ScrollX="0" ScrollY="787">tools\navEditor\NavEditorGui.gui</File>
+<File ScrollX="0" ScrollY="82">tools\gui\scriptEditorDlg.ed.gui</File>
+<File ScrollX="0" ScrollY="83">tools\convexEditor\main.cs</File>
+<File ScrollX="0" ScrollY="380">tools\datablockEditor\datablockEditor.cs</File>
+<File ScrollX="0" ScrollY="270">tools\shapeEditor\main.cs</File>
+<File ScrollX="0" ScrollY="0">tools\base\menuBar\baseMenu.ed.cs</File>
+<File ScrollX="0" ScrollY="78">tools\guiEditor\scripts\guiEditorCanvas.ed.cs</File>
+<File ScrollX="0" ScrollY="144">tools\debugger\gui\debugger.ed.gui</File>
+<File ScrollX="0" ScrollY="0">tools\worldEditor\gui\ObjectEditorSettingsTab.ed.gui</File>
+<File ScrollX="0" ScrollY="31">tools\main.cs</File>
+<File ScrollX="0" ScrollY="189">tools\navEditor\main.cs</File>
+<File ScrollX="0" ScrollY="169">tools\navEditor\NavEditorSettingsTab.gui</File>
+<File ScrollX="0" ScrollY="1287">tools\particleEditor\ParticleEditor.ed.gui</File>
+<File ScrollX="0" ScrollY="184">tools\base\utils\inspector.ed.cs</File>
+<File ScrollX="0" ScrollY="548">tools\editorClasses\scripts\guiFormClass.ed.cs</File>
+<File ScrollX="0" ScrollY="55">tools\physicsTools\main.cs</File>
+<File ScrollX="0" ScrollY="1012">tools\gui\profiles.ed.cs</File>
+<File ScrollX="0" ScrollY="0">tools\gui\guiPlatformGenericMenubar.ed.gui</File>
+<File ScrollX="0" ScrollY="0">tools\gui\guiPlatformGenericMenubar.ed.cs</File>
+<File ScrollX="0" ScrollY="130">tools\worldEditor\scripts\editor.ed.cs</File>
+<File ScrollX="0" ScrollY="206">art\gui\chooseLevelDlg.gui</File>
+<File ScrollX="0" ScrollY="149">core\scripts\server\server.cs</File>
+<File ScrollX="0" ScrollY="119">core\scripts\server\game.cs</File>
+<File ScrollX="0" ScrollY="167">scripts\server\game.cs</File>
+<File ScrollX="0" ScrollY="0">tools\editorClasses\scripts\core\zip\zipFile.ed.cs</File>
+<File ScrollX="0" ScrollY="0">scripts\client\prefs.cs</File>
+<File ScrollX="0" ScrollY="25">core\scripts\client\postFx\GammaPostFX.cs</File>
+<File ScrollX="0" ScrollY="45">core\scripts\client\helperfuncs.cs</File>
+<File ScrollX="0" ScrollY="205">core\scripts\client\core.cs</File>
+<File ScrollX="0" ScrollY="30">scripts\client\init.cs</File>
+<File ScrollX="0" ScrollY="36">core\scripts\client\cursor.cs</File>
+<File ScrollX="0" ScrollY="43">export\exportTest1.mis</File>
+<File ScrollX="0" ScrollY="66">core\scripts\client\mission.cs</File>
+<File ScrollX="0" ScrollY="147">tools\base\menuBar\menuBuilder.ed.cs</File>
+<File ScrollX="0" ScrollY="0">levels\Empty Room.mis</File>
+<File ScrollX="0" ScrollY="88">tools\worldEditor\scripts\EditorChooseLevelGui.ed.cs</File>
+<File ScrollX="0" ScrollY="43">levels\exportAtf12.mis</File>
+<File ScrollX="0" ScrollY="38">tools\worldEditor\scripts\editors\creator.ed.cs</File>
+<File ScrollX="0" ScrollY="806">tools\worldEditor\gui\objectBuilderGui.ed.gui</File>
+<File ScrollX="0" ScrollY="46">scripts\gui\startupGui.cs</File>
 </OpenFiles>
 </TorsionProjectOptions>
