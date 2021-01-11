@@ -254,7 +254,7 @@ FileNodeRef Win32FileSystem::resolve(const Path& path)
    if (handle != INVALID_HANDLE_VALUE)
    {
 #ifdef TORQUE_DEBUG
-      verifyCompatibility(path, info);
+      //verifyCompatibility(path, info);
 #endif
       if (S_ISREG(info.dwFileAttributes))
          return new Win32File(path,file);

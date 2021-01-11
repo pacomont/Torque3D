@@ -32,11 +32,13 @@
 #include "console/console.h"
 #include "platform/profiler.h"
 #include "console/engineAPI.h"
+#include "core/util/tVector.h"
 
 using namespace Torque;
 
 const U32 GBitmap::csFileVersion   = 3;
 
+#pragma init_seg(".CRT$XCA")
 Vector<GBitmap::Registration>   GBitmap::sRegistrations( __FILE__, __LINE__ );
 
 

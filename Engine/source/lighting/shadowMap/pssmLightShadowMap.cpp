@@ -485,7 +485,7 @@ void PSSMLightShadowMap::setShaderParameters(GFXShaderConstBuffer* params, Light
 void PSSMLightShadowMap::_calcPlanesCullForShadowCasters(Vector< Vector<PlaneF> > &out, const Frustum &viewFrustum, const Point3F &_ligthDir)
 {
 
-#define ENABLE_CULL_ASSERT
+//#define ENABLE_CULL_ASSERT
 
    PROFILE_SCOPE(PSSMLightShadowMap_render_getCullFrustrum);
 

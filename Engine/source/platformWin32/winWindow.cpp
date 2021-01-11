@@ -356,6 +356,8 @@ S32 WINAPI WinMain( HINSTANCE hInstance, HINSTANCE, LPSTR lpszCmdLine, S32)
 {
    Vector<char *> argv( __FILE__, __LINE__ );
 
+   int iPrev = _CrtSetReportMode(_CRT_ASSERT, 0);
+
    enum { moduleNameSize = 256 };
    char moduleName[moduleNameSize];
 #ifdef TORQUE_UNICODE
