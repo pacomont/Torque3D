@@ -774,6 +774,7 @@ function TerrainImportGui::import( %this )
       %obj.baseTexSize = $terrainWidth;   
       %obj.SetWKT(%projection);
       %obj.topLeftUTM = %topLeftXY;
+      %obj.castShadows = 0;
       
       if( %obj != %updated )
       {
