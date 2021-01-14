@@ -332,7 +332,7 @@
          HorizSizing = "width";
          VertSizing = "bottom";
          Position = "3 2";
-         Extent = "156 18";
+         Extent = "106 18";
          MinExtent = "8 8";
          canSave = "1";
          Visible = "1";
@@ -350,7 +350,7 @@
          bitmap = "tools/gui/images/separator-h.png";
          color = "255 255 255 255";
          wrap = "0";
-         position = "158 2";
+         position = "98 2";
          extent = "2 18";
          minExtent = "1 1";
          horizSizing = "left";
@@ -372,8 +372,8 @@
          anchorBottom = "0";
          anchorLeft = "1";
          anchorRight = "0";
-         position = "160 2";
-         extent = "120 18";
+         position = "100 2";
+         extent = "160 18";
          minExtent = "8 8";
          horizSizing = "left";
          vertSizing = "bottom";
@@ -390,7 +390,7 @@
          bitmap = "tools/gui/images/separator-h.png";
          color = "255 255 255 255";
          wrap = "0";
-         position = "282 2";
+         position = "262 2";
          extent = "2 18";
          minExtent = "1 1";
          horizSizing = "left";
@@ -412,8 +412,8 @@
          anchorBottom = "0";
          anchorLeft = "1";
          anchorRight = "0";
-         position = "290 2";
-         extent = "180 18";
+         position = "270 2";
+         extent = "200 18";
          minExtent = "8 8";
          horizSizing = "left";
          vertSizing = "bottom";
