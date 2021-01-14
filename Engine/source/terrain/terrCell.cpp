@@ -39,7 +39,7 @@ GFXImplementVertexFormat( TerrVertex )
    addElement( "Empty", GFXDeclType_Float, 1 );
 };
 
-const U32 TerrCell::smMinCellSize   = 64;
+const U32 TerrCell::smMinCellSize   = 128;
 const U32 TerrCell::smVBStride      = TerrCell::smMinCellSize + 1;         // 129
 const U32 TerrCell::smVBSize        = ( TerrCell::smVBStride * TerrCell::smVBStride ) + 
                                       ( TerrCell::smVBStride * 4 );        // 17,157
