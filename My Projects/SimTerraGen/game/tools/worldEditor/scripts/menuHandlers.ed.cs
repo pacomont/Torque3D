@@ -472,19 +472,19 @@ function EditorExportToATF( %atfFileName )
 	{	
 	   return;   
 	}
-	   
+	
+	
    %file.writeline(trim(fileName( $Server::MissionFile)));
    
-  
-   
+
    /////////////////////////////////////////////////////////////////////////////
    //Guardar los terrenos (.ter)
    /////////////////////////////////////////////////////////////////////////////   
    
    initContainerTypeSearch( $TypeMasks::TerrainObjectType );
    %savedTerrNames = new ScriptObject();
-   for( %i = 0;; %i ++ )
-   {
+   //for( %i = 0;; %i ++ ) //Por ahora solo un terreno
+//   {
       %terrainObject = containerSearchNext();
       if( !%terrainObject )
          break;
@@ -542,9 +542,13 @@ function EditorExportToATF( %atfFileName )
       }         
       */
       
-      
       %file.writeline(trim(fileName(%newTerrainFile)));
-   }
+      //Añadimos información georeferencial
+      %file.writeline(%terrainObject.coordSys);      
+      %file.writeline(%terrainObject.projection);
+      %file.writeline(%terrainObject.topLeftUTM);    
+      %file.writeline(%terrainObject.squareSize);                      
+//   }
 
    ETerrainEditor.isDirty = false;
    
@@ -763,6 +767,15 @@ function EditorImportFromATF(%atfFileName)
 	   
    %filename = %file.readline(); // .mis file   
    %fileTer = %file.readline();  // .ter file
+   
+   ////////////////////////////////////////////////////////////////
+   //Leemos información georeferencial (Aqui no se usa)
+   %coordSys = %file.readline();  //   %terrainObject.coordSys)  
+   %projection = %file.readline();  //   %terrainObject.projection
+   %topLeftUTM = %file.readline();  //   %terrainObject.topLeftUTM
+   %squareSize = %file.readline();  // %terrainObject.squareSize
+   ////////////////////////////////////////////////////////////////
+      
    %fileMaterial = %file.readline();
    %fileTexture = %file.readline();
    
