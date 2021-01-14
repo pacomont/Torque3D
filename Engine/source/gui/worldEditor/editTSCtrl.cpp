@@ -965,7 +965,7 @@ void EditTSCtrl::renderGrid()
          ++counter;
 
          // No infinite loops here
-         if(counter > 1000)
+         if(counter > 10000)
             break;
       }
    }
@@ -988,7 +988,7 @@ void EditTSCtrl::renderGrid()
 
    GFXStateBlockDesc desc;
    desc.setBlend( true );
-   desc.setZReadWrite( true, false );
+   desc.setZReadWrite( false, false );
 
    GFXDrawUtil::Plane plane = GFXDrawUtil::PlaneXY;
    switch( getDisplayType() )
@@ -1012,7 +1012,11 @@ void EditTSCtrl::renderGrid()
          break;
    }
 
-   GFX->getDrawUtil()->drawPlaneGrid( desc, gridPlanePos, size, Point2F( minorTickSize, minorTickSize ), mGridPlaneMinorTickColor, plane );
+   
+   //GFX->getDrawUtil()->drawPlaneGrid( desc, gridPlanePos, size, Point2F( minorTickSize, minorTickSize ), mGridPlaneMinorTickColor, plane );
+   //Regilla 1000m
+   mGridPlaneColor = ColorI(200, 200, 200, 200);
+   gridSize = 1000.0f;
    GFX->getDrawUtil()->drawPlaneGrid( desc, gridPlanePos, size, Point2F( gridSize, gridSize ), mGridPlaneColor, plane );
 }
 
