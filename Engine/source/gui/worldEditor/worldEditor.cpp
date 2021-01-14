@@ -1959,7 +1959,7 @@ void WorldEditor::on3DMouseMove(const Gui3DMouseEvent & event)
 
    if(tblock->geo_topLeft.x == 0 || tblock->geo_topLeft.y == 0)
    {
-      dSprintf(buf, sizeof(buf), "%f, %f", endPnt.x, endPnt.y);
+      dSprintf(buf, sizeof(buf), "Point: %f %f %f", endPnt.x, endPnt.y, endPnt.z);
       Con::executef(this, "onMouseMoveCoord", ri.object->getName(), buf);
       return;
    }
@@ -1988,7 +1988,7 @@ void WorldEditor::on3DMouseMove(const Gui3DMouseEvent & event)
       std::string dmsLat = DMS::Encode(p.Latitude(), 6, DMS::LATITUDE);
       std::string dmsLong = DMS::Encode(p.Longitude(), 6, DMS::LONGITUDE);
 
-      dSprintf(buf, sizeof(buf), "%s, %s", dmsLat.c_str(), dmsLong.c_str());
+      dSprintf(buf, sizeof(buf), "%s, %s [%.fm]", dmsLat.c_str(), dmsLong.c_str(), endPnt.z);
    }
    else
    {
@@ -2025,8 +2025,8 @@ void WorldEditor::on3DMouseMove(const Gui3DMouseEvent & event)
          try
          {
             //const char* aa = os.c_str();
-            dSprintf(buf, sizeof(buf), "UTM: %s",
-               p.UTMUPSRepresentation().c_str());
+            dSprintf(buf, sizeof(buf), "UTM: %s [%.fm]",
+               p.UTMUPSRepresentation().c_str(), endPnt.z);
          }
          catch (std::exception& e)
          {
@@ -2044,15 +2044,15 @@ void WorldEditor::on3DMouseMove(const Gui3DMouseEvent & event)
             os
          );
 
-         dSprintf(buf, sizeof(buf), "GEOREF: %s",
-            os.c_str());
+         dSprintf(buf, sizeof(buf), "GEOREF: %s [%.fm]",
+            os.c_str(), endPnt.z);
       }
       else if (mCoordinateMode == MGRS)
       {
          std::string os = p.AltMGRSRepresentation();
 
-         dSprintf(buf, sizeof(buf), "MGRS: %s",
-            os.c_str());
+         dSprintf(buf, sizeof(buf), "MGRS: %s [%.fm]",
+            os.c_str(), endPnt.z);
       }
 
    }
